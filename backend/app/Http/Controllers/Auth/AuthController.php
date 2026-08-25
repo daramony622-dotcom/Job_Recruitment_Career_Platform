@@ -38,6 +38,7 @@ class AuthController extends Controller
         ]);
     }
 
+
     public function resendOtp(ResendOtpRequest $request)
     {
         $user = $this->authService->findUserOrFail($request->email);
