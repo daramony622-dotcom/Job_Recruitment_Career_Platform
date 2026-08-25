@@ -84,6 +84,8 @@ return [
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
+    'allow_unverified_login' => env('APP_ALLOW_UNVERIFIED_LOGIN', false),
+
     /*
     |--------------------------------------------------------------------------
     | Encryption Key

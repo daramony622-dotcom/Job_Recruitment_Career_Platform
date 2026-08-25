@@ -7,22 +7,21 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Adds a convenience role column directly on users table
+     * for faster role-based queries without joining auths table.
      */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            $table->enum('role', ['admin', 'hr', 'user'])->default('user')->after('email');
+            $table->boolean('is_active')->default(true)->after('role');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            $table->dropColumn(['role', 'is_active']);
         });
     }
 };

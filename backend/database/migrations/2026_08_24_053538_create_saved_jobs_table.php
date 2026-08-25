@@ -7,19 +7,23 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Saved/bookmarked jobs by Job Seekers.
+     * Many-to-many between users and job_posts.
      */
     public function up(): void
     {
         Schema::create('saved_jobs', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('job_post_id')->constrained('job_posts')->cascadeOnDelete();
+            $table->text('notes')->nullable(); // Personal notes about this job
             $table->timestamps();
+
+            $table->unique(['user_id', 'job_post_id']);
+            $table->index('user_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('saved_jobs');
