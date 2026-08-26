@@ -1,3 +1,5 @@
+<?php
+
 namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
@@ -9,30 +11,25 @@ use Illuminate\Http\Request;
 
 class CompanyProfileController extends Controller
 {
-    protected CompanyService $companyService;
-
-    public function __construct(CompanyService $companyService)
+    public function __construct(private readonly CompanyService $companyService)
     {
-        $this->companyService = $companyService;
     }
 
+    // GET /hr/profile
     public function show(Request $request): JsonResponse
     {
-        // Get the authenticated user's company
-        $company = $request->user()->company; // Assuming a hasOne('company') relation on User
+        $company = $request->user()->company;
 
         if (!$company) {
             return response()->json(['message' => 'Company profile not found.'], 404);
         }
 
-        return response()->json([
-            'data' => $company
-        ]);
+        return response()->json(['data' => $company]);
     }
 
+    // POST /hr/profile
     public function store(StoreCompanyRequest $request): JsonResponse
     {
-        // Ensure user doesn't already have a company
         if ($request->user()->company) {
             return response()->json(['message' => 'Company profile already exists.'], 422);
         }
@@ -41,10 +38,11 @@ class CompanyProfileController extends Controller
 
         return response()->json([
             'message' => 'Company profile created successfully.',
-            'data' => $company
+            'data'    => $company,
         ], 201);
     }
 
+    // PUT /hr/profile
     public function update(UpdateCompanyRequest $request): JsonResponse
     {
         $company = $request->user()->company;
@@ -53,11 +51,11 @@ class CompanyProfileController extends Controller
             return response()->json(['message' => 'Company profile not found.'], 404);
         }
 
-        $updatedCompany = $this->companyService->update($request->validated(), $company);
+        $updated = $this->companyService->update($request->validated(), $company);
 
         return response()->json([
             'message' => 'Company profile updated successfully.',
-            'data' => $updatedCompany
+            'data'    => $updated,
         ]);
     }
 }

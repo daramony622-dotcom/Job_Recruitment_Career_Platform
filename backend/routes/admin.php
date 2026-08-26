@@ -23,6 +23,7 @@ Route::name('admin.')->group(function () {
     // Manage Users & Companies
     Route::apiResource('users', UserController::class);
     Route::apiResource('companies', CompanyController::class);
+    Route::match(['put', 'patch'], 'companies/{company}/status', [CompanyController::class, 'updateStatus'])->name('companies.updateStatus');
 
     // Manage Job Categories, Posts, & Skills
     Route::apiResource('job-categories', JobCategoryController::class);

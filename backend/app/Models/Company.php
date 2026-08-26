@@ -30,6 +30,16 @@ class Company extends Model
         'verified_at',
     ];
 
+    protected $casts = [
+        'is_verified'  => 'boolean',
+        'verified_at'  => 'datetime',
+        'founded_year' => 'integer',
+    ];
+
+    // -------------------------------------------------------------------------
+    // Relationships
+    // -------------------------------------------------------------------------
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
