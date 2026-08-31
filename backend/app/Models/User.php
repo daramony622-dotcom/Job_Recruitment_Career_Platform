@@ -15,10 +15,21 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
         'role', // admin | hr | user
         'email_verified_at',
+        'google_id',
+        'avatar',
+        'telegram_id',
+        'telegram_username',
+        'telegram_photo',
     ];
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->telegram_photo ?? $this->avatar;
+    }
 
     protected $hidden = [
         'password',

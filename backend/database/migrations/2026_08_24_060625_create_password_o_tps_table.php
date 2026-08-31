@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('password_otps', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->string('code', 6);
+            $table->string('code', 8)->isNotEmpty();
             $table->enum('purpose', ['email_verification', 'password_reset'])->default('email_verification');
             $table->boolean('used')->default(false);
             $table->timestamp('expires_at');

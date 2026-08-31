@@ -120,4 +120,41 @@ class AuthenticationTest extends TestCase
             ->assertOk()
             ->assertJson(['message' => 'Logged out.']);
     }
+
+    public function test_google_auth_redirect_returns_json_or_redirect(): void
+    {
+        $response = $this->getJson('/api/auth/google');
+        $response->assertOk()
+            ->assertJsonStructure(['redirect_url']);
+    }
+
+    public function test_telegram_auth_with_valid_hash_registers_user(): void
+    {
+        config()->set('services.telegram.bot_token', '123456789:TestToken');
+
+        $data = [
+            'id'         => '987654321',
+            'first_name' => 'John',
+            'last_name'  => 'Telegram',
+            'username'   => 'john_tg',
+            'auth_date'  => (string) time(),
+        ];
+
+        ksort($data);
+        $checkString = implode("\n", array_map(fn($k, $v) => "{$k}={$v}", array_keys($data), array_values($data)));
+        $secret      = hash('sha256', '123456789:TestToken', true);
+        $hash        = hash_hmac('sha256', $checkString, $secret);
+
+        $data['hash'] = $hash;
+
+        $response = $this->postJson('/api/auth/telegram/callback', $data);
+
+        $response->assertCreated()
+            ->assertJsonStructure(['token', 'token_type', 'is_new_user', 'user']);
+
+        $this->assertDatabaseHas('users', [
+            'telegram_id'       => '987654321',
+            'telegram_username' => 'john_tg',
+        ]);
+    }
 }

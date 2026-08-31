@@ -16,8 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role'=>RoleMiddleware::class,
-            'verified.otp'=> AuthMiddleware::class
+            'role' => RoleMiddleware::class,
+            'verified.otp' => AuthMiddleware::class,
+            'has.company' => \App\Http\Middleware\EnsureHasCompany::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

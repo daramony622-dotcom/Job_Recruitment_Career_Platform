@@ -17,7 +17,7 @@ class JobCategoryService
     // Read
     // -------------------------------------------------------------------------
 
-    public function paginate(array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function paginate(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         return JobCategory::with('parent')
             ->when(

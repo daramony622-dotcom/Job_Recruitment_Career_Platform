@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use App\Models\JobSkill;
 
 class Skill extends Model
 {
@@ -48,7 +49,10 @@ class Skill extends Model
 
     public function jobs(): BelongsToMany
     {
-        return $this->belongsToMany(Job::class, 'job_skill', 'skill_id', 'job_post_id');
+        return $this->belongsToMany(JobPost::class, 'job_skill', 'skill_id', 'job_post_id')
+                ->using(JobSkill::class)
+                    ->withPivot('level', 'is_required')
+                    ->withTimestamps();
     }
 
     public function users(): BelongsToMany

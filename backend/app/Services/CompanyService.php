@@ -24,8 +24,7 @@ class CompanyService
         });
     }
 
-    public function update(array $data, Company $company): Company
-    {
+    public function update(array $data, Company $company): Company {
         return DB::transaction(function () use ($data, $company) {
             if (isset($data['name']) && $data['name'] !== $company->name) {
                 $data['slug'] = Str::slug($data['name']) . '-' . Str::random(5);

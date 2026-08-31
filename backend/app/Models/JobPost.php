@@ -9,13 +9,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use App\Models\JobSkill;
 
-class Job extends Model
+class JobPost extends Model
 {
     use SoftDeletes;
 
+    /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
     protected $table = 'job_posts';
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'company_id',
         'category_id',
@@ -43,6 +54,11 @@ class Job extends Model
         'published_at',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'salary_min' => 'decimal:2',
         'salary_max' => 'decimal:2',
@@ -62,15 +78,15 @@ class Job extends Model
     {
         parent::boot();
 
-        static::creating(function (self $job) {
-            if (empty($job->slug)) {
-                $job->slug = self::generateUniqueSlug($job->title);
+        static::creating(function (self $jobPost) {
+            if (empty($jobPost->slug)) {
+                $jobPost->slug = self::generateUniqueSlug($jobPost->title);
             }
         });
 
-        static::updating(function (self $job) {
-            if ($job->isDirty('title') && ! $job->isDirty('slug')) {
-                $job->slug = self::generateUniqueSlug($job->title, $job->id);
+        static::updating(function (self $jobPost) {
+            if ($jobPost->isDirty('title') && ! $jobPost->isDirty('slug')) {
+                $jobPost->slug = self::generateUniqueSlug($jobPost->title, $jobPost->id);
             }
         });
     }
@@ -96,12 +112,20 @@ class Job extends Model
 
     public function savedByUsers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'saved_jobs', 'job_post_id', 'user_id')->withTimestamps();
+        return $this->belongsToMany(User::class, 'saved_jobs', 'job_post_id', 'user_id')
+                    ->withTimestamps();
     }
 
+    /**
+     * The skills required for this job post.
+     * This is a "rich" many-to-many relationship with extra pivot columns.
+     */
     public function skills(): BelongsToMany
     {
-        return $this->belongsToMany(Skill::class, 'job_skill', 'job_post_id', 'skill_id');
+        return $this->belongsToMany(Skill::class, 'job_skill', 'job_post_id', 'skill_id')
+                ->using(JobSkill::class)
+                    ->withPivot('level', 'is_required') // ✅ FIXED: Fetches these columns
+                    ->withTimestamps();                 // ✅ FIXED: Includes pivot timestamps
     }
 
     public function interviews(): HasMany
@@ -160,7 +184,10 @@ class Job extends Model
 
     public function isPublished(): bool
     {
-        return $this->status === 'published' && (!$this->deadline || $this->deadline->isFuture());
+        $deadline = $this->getRawOriginal('deadline');
+
+        return $this->status === 'published'
+            && ($deadline === null || $deadline >= now()->toDateString());
     }
 
     private static function generateUniqueSlug(string $title, ?int $excludeId = null): string

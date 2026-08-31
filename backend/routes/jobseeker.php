@@ -11,7 +11,6 @@ use App\Http\Controllers\Api\JobSeeker\ApplicationController;
 use App\Http\Controllers\Api\JobSeeker\NotificationController;
 use Illuminate\Support\Facades\Route;
 
-
 // Profile
 Route::get('profile', [ProfileController::class, 'show']);
 Route::put('profile', [ProfileController::class, 'update']);
