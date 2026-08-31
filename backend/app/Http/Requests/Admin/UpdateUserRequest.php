@@ -5,7 +5,7 @@ namespace App\Http\Requests\Admin;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreUserRequest extends FormRequest
+class UpdateUserRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,13 @@ class StoreUserRequest extends FormRequest
      */
     public function rules(): array
     {
+        $userId = $this->route('user')?->id ?? $this->route('user');
+
         return [
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
-            'role'     => ['sometimes', 'string', 'in:admin,company,job_seeker'],
+            'name'      => ['sometimes', 'string', 'max:255'],
+            'email'     => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,' . $userId],
+            'is_active' => ['sometimes', 'boolean'],
+            'profile'   => ['sometimes', 'array'],
         ];
     }
 
@@ -38,13 +40,9 @@ class StoreUserRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required'     => 'The name field is required.',
-            'email.required'    => 'The email address is required.',
             'email.email'       => 'Please provide a valid email address.',
-            'email.unique'      => 'This email is already registered.',
-            'password.required' => 'The password field is required.',
-            'password.min'      => 'The password must be at least 8 characters.',
-            'role.in'           => 'The selected role is invalid.',
+            'email.unique'      => 'This email is already taken by another user.',
+            'is_active.boolean' => 'The active status must be true or false.',
         ];
     }
 }
