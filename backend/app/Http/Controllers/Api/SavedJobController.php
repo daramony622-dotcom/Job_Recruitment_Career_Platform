@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\JobSeeker;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSavedJobRequest;
@@ -70,6 +70,17 @@ class SavedJobController extends Controller
      */
     public function show(SavedJob $savedJob): SavedJobResource
     {
+        $savedJob->load(['job', 'user']);
+
+        return new SavedJobResource($savedJob);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(StoreSavedJobRequest $request, SavedJob $savedJob): SavedJobResource
+    {
+        $savedJob->update($request->validated());
         $savedJob->load(['job', 'user']);
 
         return new SavedJobResource($savedJob);
