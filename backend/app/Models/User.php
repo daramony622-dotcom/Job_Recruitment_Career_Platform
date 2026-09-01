@@ -1,7 +1,7 @@
-<<<<<<< HEAD
+
 <?php
 
-namespace App\Models;
+\namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -70,5 +70,3 @@ class User extends Authenticatable
         return $this->role === 'user';
     }
 }
-=======
->>>>>>> feature/admin-settings
