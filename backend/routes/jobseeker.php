@@ -37,9 +37,10 @@ Route::post('saved-jobs/{jobPost}', [SavedJobController::class, 'store']);
 Route::delete('saved-jobs/{jobPost}', [SavedJobController::class, 'destroy']);
 
 // Apply & application history/status
-Route::get('applications', [ApplicationController::class, 'index']);
-Route::post('applications', [ApplicationController::class, 'store']);
-Route::get('applications/{application}', [ApplicationController::class, 'show']);
+Route::get('/applications', [ApplicationController::class, 'index']);
+Route::post('/applications', [ApplicationController::class, 'store']);
+Route::get('/applications/{application}', [ApplicationController::class, 'show']);
+Route::patch('/applications/{application}/withdraw', [ApplicationController::class, 'withdraw']);
 
 // Notifications
 Route::get('notifications', [NotificationController::class, 'index']);

@@ -1,7 +1,6 @@
-
 <?php
 
-\namespace App\Models;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -48,6 +47,16 @@ class User extends Authenticatable
     public function otps()
     {
         return $this->hasMany(PasswordOTp::class);
+    }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(Profile::class);
+    }
+
+    public function skills(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Skill::class, 'user_skill', 'user_id', 'skill_id');
     }
 
     public function company(): HasOne

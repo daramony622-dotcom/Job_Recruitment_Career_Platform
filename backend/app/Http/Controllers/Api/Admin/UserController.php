@@ -22,21 +22,10 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = User::with(['profile', 'skills']);
-
-        if ($request->has('role')) {
-            $query->where('role', $request->input('role'));
-        }
-
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
-
-        $users = $query->paginate(20);
+        $users = $this->userService->paginate(
+            $request->only(['role', 'search']),
+            $request->integer('per_page', 20)
+        );
 
         return response()->json([
             'status' => 'success',
@@ -53,7 +42,7 @@ class UserController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8'],
-            'role'     => ['sometimes', 'string', 'in:admin,company,job_seeker'],
+            'role'     => ['sometimes', 'string', 'in:admin,hr,user'],
         ]);
 
         $user = $this->userService->createUser($validated);

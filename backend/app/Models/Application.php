@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 
 class Application extends Model
 {
-    protected $table = 'applications';
+    use HasFactory;
 
     protected $fillable = [
         'job_post_id',
@@ -31,55 +31,40 @@ class Application extends Model
         'hired_at' => 'datetime',
     ];
 
-    // -------------------------------------------------------------------------
     // Relationships
-    // -------------------------------------------------------------------------
-
-    public function job(): BelongsTo
+    public function jobPost(): BelongsTo
     {
-        return $this->belongsTo(Job::class, 'job_post_id');
+        return $this->belongsTo(JobPost::class);
+    }
+
+    public function jobSeeker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function interviews(): HasMany
     {
-        return $this->hasMany(Interview::class, 'application_id');
+        return $this->hasMany(Interview::class);
     }
 
-    // -------------------------------------------------------------------------
-    // Scopes
-    // -------------------------------------------------------------------------
-
-    public function scopeStatus(Builder $query, string $status): Builder
+    // Convenience scopes
+    public function scopeStatus($query, string $status)
     {
         return $query->where('status', $status);
     }
 
-    public function scopePending(Builder $query): Builder
+    public function scopeForUser($query, int $userId)
     {
-        return $query->where('status', 'pending');
+        return $query->where('user_id', $userId);
     }
 
-    public function scopeActive(Builder $query): Builder
+    public function scopeForCompany($query, int $companyId)
     {
-        return $query->whereNotIn('status', ['rejected', 'withdrawn', 'hired']);
-    }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    public function isWithdrawn(): bool
-    {
-        return $this->status === 'withdrawn';
-    }
-
-    public function isTerminal(): bool
-    {
-        return in_array($this->status, ['rejected', 'hired', 'withdrawn']);
+        return $query->whereHas('jobPost', fn ($q) => $q->where('company_id', $companyId));
     }
 }

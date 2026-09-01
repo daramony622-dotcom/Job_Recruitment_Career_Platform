@@ -3,142 +3,116 @@
 namespace App\Services;
 
 use App\Models\Application;
-use App\Models\Job;
-use Illuminate\Pagination\LengthAwarePaginator;
+use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ApplicationService
 {
-    /**
-     * Get paginated applications for a specific job seeker.
-     */
-    public function getJobSeekerApplications(int $userId, array $filters = []): LengthAwarePaginator
+    public function apply(User $jobSeeker, array $data, ?UploadedFile $cv): Application
     {
-        return Application::with(['job.company', 'job.category'])
-            ->where('user_id', $userId)
-            ->when($filters['status'] ?? null, function ($query, $status) {
-                $query->where('status', $status);
-            })
-            ->latest()
-            ->paginate($filters['per_page'] ?? 15);
-    }
-
-    /**
-     * Get paginated applications for a company's job postings (HR view).
-     */
-    public function getCompanyApplications(int $companyId, array $filters = []): LengthAwarePaginator
-    {
-        return Application::with(['job', 'user.profile', 'user.skills'])
-            ->whereHas('job', function ($query) use ($companyId) {
-                $query->where('company_id', $companyId);
-            })
-            ->when($filters['job_post_id'] ?? null, function ($query, $jobId) {
-                $query->where('job_post_id', $jobId);
-            })
-            ->when($filters['status'] ?? null, function ($query, $status) {
-                $query->where('status', $status);
-            })
-            ->when($filters['search'] ?? null, function ($query, $search) {
-                $query->whereHas('user', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
-                });
-            })
-            ->latest()
-            ->paginate($filters['per_page'] ?? 15);
-    }
-
-    /**
-     * Submit a new job application as a job seeker.
-     */
-    public function submitApplication(int $userId, array $data): Application
-    {
-        $job = Job::findOrFail($data['job_post_id']);
-
-        // Check if the job is published and active
-        if (! $job->isPublished()) {
-            throw ValidationException::withMessages([
-                'job_post_id' => ['This job is no longer accepting applications.'],
-            ]);
-        }
-
-        // Check for duplicate application
-        $existing = Application::where('job_post_id', $job->id)
-            ->where('user_id', $userId)
-            ->exists();
+        // Check if user has already applied for this job
+        $existing = Application::where('job_post_id', $data['job_post_id'])
+            ->where('user_id', $jobSeeker->id)
+            ->first();
 
         if ($existing) {
             throw ValidationException::withMessages([
-                'job_post_id' => ['You have already applied for this job position.'],
+                'job_post_id' => 'You have already applied for this job post.',
             ]);
         }
 
-        $cvPath = $data['cv_path'] ?? null;
-        $cvOriginalName = $data['cv_original_name'] ?? null;
+        return DB::transaction(function () use ($jobSeeker, $data, $cv) {
+            $cvPath = null;
+            $cvOriginalName = null;
 
-        // If no custom CV is provided for this application, fallback to seeker's profile default CV
-        if (! $cvPath) {
-            $userProfile = DB::table('profiles')->where('user_id', $userId)->first();
-            if ($userProfile && $userProfile->cv_path) {
-                $cvPath = $userProfile->cv_path;
-                $cvOriginalName = $userProfile->cv_original_name;
+            if ($cv) {
+                $cvPath = $cv->store('cvs', 'private');
+                $cvOriginalName = $cv->getClientOriginalName();
             }
-        }
 
-        return Application::create([
-            'job_post_id' => $job->id,
-            'user_id' => $userId,
-            'cover_letter' => $data['cover_letter'] ?? null,
-            'cv_path' => $cvPath,
-            'cv_original_name' => $cvOriginalName,
-            'status' => 'pending',
-        ]);
+            return Application::create([
+                'job_post_id' => $data['job_post_id'],
+                'user_id'     => $jobSeeker->id,
+                'cover_letter'=> $data['cover_letter'] ?? null,
+                'cv_path'     => $cvPath,
+                'cv_original_name' => $cvOriginalName,
+                'status'      => 'pending',
+            ]);
+        });
     }
 
-    /**
-     * Update an application's status (Shortlisted, Interview, Offered, Hired, Rejected).
-     */
-    public function updateStatus(Application $application, string $newStatus, ?string $reason = null, ?string $hrNotes = null): Application
+    public function listForJobSeeker(User $jobSeeker, ?string $status = null)
     {
-        $updateData = ['status' => $newStatus];
+        return Application::with(['jobPost.company'])
+            ->forUser($jobSeeker->id)
+            ->when($status, fn ($q) => $q->status($status))
+            ->latest()
+            ->paginate(15);
+    }
+
+    public function listForCompany(int $companyId, ?string $status = null)
+    {
+        return Application::with(['jobPost', 'jobSeeker.profile'])
+            ->forCompany($companyId)
+            ->when($status, fn ($q) => $q->status($status))
+            ->latest()
+            ->paginate(15);
+    }
+
+    public function listAll(?string $status = null)
+    {
+        return Application::with(['jobPost.company', 'jobSeeker.profile'])
+            ->when($status, fn ($q) => $q->status($status))
+            ->latest()
+            ->paginate(15);
+    }
+
+    public function updateStatus(Application $application, string $status, ?string $hrNotes = null, ?string $rejectionReason = null): Application
+    {
+        $application->status = $status;
 
         if ($hrNotes !== null) {
-            $updateData['hr_notes'] = $hrNotes;
+            $application->hr_notes = $hrNotes;
         }
 
-        // Set status-specific transition timestamps
-        match ($newStatus) {
-            'shortlisted' => $updateData['shortlisted_at'] = now(),
-            'rejected' => [
-                'rejected_at' => now(),
-                'rejection_reason' => $reason,
-            ],
-            'hired' => $updateData['hired_at'] = now(),
-            default => null,
-        };
+        if ($status === 'shortlisted') {
+            $application->shortlisted_at = now();
+        } elseif ($status === 'rejected') {
+            $application->rejected_at = now();
+            if ($rejectionReason !== null) {
+                $application->rejection_reason = $rejectionReason;
+            }
+        } elseif ($status === 'hired') {
+            $application->hired_at = now();
+        }
 
-        $application->update($updateData);
+        $application->save();
 
-        return $application->fresh();
+        return $application->fresh(['jobPost', 'jobSeeker.profile']);
     }
 
-    /**
-     * Withdraw an application as a job seeker.
-     */
-    public function withdrawApplication(Application $application, int $userId): bool
+    public function shortlist(Application $application, ?string $hrNotes = null): Application
     {
-        if ($application->user_id !== $userId) {
-            throw new \Exception('Unauthorized action.', 403);
-        }
+        return $this->updateStatus($application, 'shortlisted', $hrNotes);
+    }
 
-        if (in_array($application->status, ['hired', 'rejected', 'withdrawn'])) {
+    public function reject(Application $application, ?string $rejectionReason = null, ?string $hrNotes = null): Application
+    {
+        return $this->updateStatus($application, 'rejected', $hrNotes, $rejectionReason);
+    }
+
+    public function withdraw(Application $application): Application
+    {
+        if ($application->status === 'withdrawn') {
             throw ValidationException::withMessages([
-                'status' => ["Cannot withdraw application once it is {$application->status}."],
+                'status' => 'Application is already withdrawn.',
             ]);
         }
 
-        return $application->update(['status' => 'withdrawn']);
+        $application->update(['status' => 'withdrawn']);
+
+        return $application;
     }
 }
