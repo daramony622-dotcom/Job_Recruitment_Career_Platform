@@ -39,8 +39,8 @@ class CloudinaryService
             'resource_type' => $resourceType,
         ];
 
-        $result = $this->cloudinary->uploadApi()->upload($filePath, $options);
 
+        $result = $this->cloudinary->uploadApi()->upload($filePath, $options);
         return [
             'secure_url' => $result['secure_url'] ?? $result['url'] ?? null,
             'public_id'  => $result['public_id'] ?? null,
@@ -68,8 +68,7 @@ class CloudinaryService
     /**
      * Delete file from Cloudinary by public ID.
      */
-    public function deleteFile(string $publicId, string $resourceType = 'image'): bool
-    {
+    public function deleteFile(string $publicId, string $resourceType = 'image'): bool {
         try {
             $result = $this->cloudinary->uploadApi()->destroy($publicId, [
                 'resource_type' => $resourceType,

@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Artisan;
 
-class FailedJobService
-{
+
+class FailedJobService {
     public function paginate(int $perPage = 15): LengthAwarePaginator
     {
         return FailedJob::query()->latest('failed_at')->paginate($perPage);
