@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?php
 
 namespace App\Models;
@@ -69,3 +70,5 @@ class User extends Authenticatable
         return $this->role === 'user';
     }
 }
+=======
+>>>>>>> feature/admin-settings
