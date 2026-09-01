@@ -12,7 +12,7 @@ class UploadCVRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,9 @@ class UploadCVRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'title' => ['required', 'string', 'max:255'],
+            'file_path' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:5120'], // Max 5MB
+            'is_primary' => ['sometimes', 'boolean'],
         ];
     }
 }

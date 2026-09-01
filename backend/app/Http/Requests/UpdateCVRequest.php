@@ -4,9 +4,8 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class StoreSavedJobRequest extends FormRequest
+class UpdateCVRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,14 +23,9 @@ class StoreSavedJobRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'job_id' => [
-                'required',
-                'integer',
-                'exists:jobs,id',
-                Rule::unique('saved_jobs', 'job_id')->where(function ($query) {
-                    return $query->where('user_id', $this->user()->id);
-                }),
-            ],
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'file_path' => ['sometimes', 'required', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
+            'is_primary' => ['sometimes', 'boolean'],
         ];
     }
 }
