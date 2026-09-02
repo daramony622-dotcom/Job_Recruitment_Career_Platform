@@ -40,11 +40,15 @@ const profile = ref({
   profile_views: 148
 })
 
+// File Input Ref
+const avatarInput = ref(null)
+
 // UI State
 const isEditing = ref(false)
 const showUploadModal = ref(false)
 const isSaving = ref(false)
 const saveSuccess = ref(false)
+const uploadMessage = ref('')
 
 // Edit Form Draft State
 const editForm = ref({ ...profile.value })
@@ -65,8 +69,38 @@ const saveProfile = () => {
     isSaving.value = false
     isEditing.value = false
     saveSuccess.value = true
+    uploadMessage.value = 'Profile details updated successfully!'
     setTimeout(() => { saveSuccess.value = false }, 3500)
   }, 1000)
+}
+
+// Image Upload Handler
+const triggerAvatarUpload = () => {
+  if (avatarInput.value) avatarInput.value.click()
+}
+
+const handleAvatarUpload = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    const imageUrl = URL.createObjectURL(file)
+    profile.value.avatar = imageUrl
+    editForm.value.avatar = imageUrl
+    uploadMessage.value = 'Profile photo updated successfully!'
+    saveSuccess.value = true
+    setTimeout(() => { saveSuccess.value = false }, 3500)
+  }
+}
+
+const handleFileUpload = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    profile.value.cv_original_name = file.name
+    profile.value.cv_uploaded_at = new Date().toISOString()
+    showUploadModal.value = false
+    uploadMessage.value = 'Resume document uploaded successfully!'
+    saveSuccess.value = true
+    setTimeout(() => { saveSuccess.value = false }, 3500)
+  }
 }
 
 // Helpers
@@ -93,20 +127,20 @@ const formatDate = (iso) => {
   if (!iso) return ''
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
-
-const handleFileUpload = (e) => {
-  const file = e.target.files[0]
-  if (file) {
-    profile.value.cv_original_name = file.name
-    profile.value.cv_uploaded_at = new Date().toISOString()
-    showUploadModal.value = false
-  }
-}
 </script>
 
 <template>
   <div class="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-200">
     <Navbar />
+
+    <!-- Hidden Native File Input for Avatar -->
+    <input 
+      ref="avatarInput" 
+      type="file" 
+      accept="image/*" 
+      class="hidden" 
+      @change="handleAvatarUpload" 
+    />
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
 
@@ -114,60 +148,52 @@ const handleFileUpload = (e) => {
       <div v-if="saveSuccess" class="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center justify-between shadow-xs">
         <span class="flex items-center gap-2">
           <CheckCircle2 class="w-4 h-4 text-emerald-500" />
-          <span>Profile changes saved successfully!</span>
+          <span>{{ uploadMessage || 'Profile updated successfully!' }}</span>
         </span>
         <button @click="saveSuccess = false" class="text-emerald-600 hover:text-emerald-800"><X class="w-4 h-4" /></button>
       </div>
 
-      <!-- ─── 1. Header Profile Hero Banner Card ──────────────────────── -->
-      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs relative">
+      <!-- ─── 1. Header Profile Header Card (Without Cover Photo) ────────── -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs relative overflow-hidden">
         
-        <!-- Cover Photo Gradient Banner -->
-        <div class="h-40 sm:h-48 w-full bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-900 relative">
-          <div class="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.15),transparent_50%)]"></div>
-
-          <!-- Open To Work Pill Top Right -->
-          <div class="absolute top-4 right-4 flex items-center gap-2">
-            <span 
-              v-if="profile.is_open_to_work" 
-              class="bg-emerald-500 text-white text-[11px] font-extrabold uppercase px-3.5 py-1 rounded-full border border-white/20 shadow-md flex items-center gap-1.5"
-            >
-              <Sparkles class="w-3.5 h-3.5" /> Open to Work
-            </span>
-            <span 
-              class="text-[11px] font-bold px-3 py-1 rounded-full backdrop-blur-md text-white border border-white/20"
-              :class="profile.is_profile_visible ? 'bg-blue-600/80' : 'bg-slate-800/80'"
-            >
-              {{ profile.is_profile_visible ? 'Public to HR' : 'Private Profile' }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Avatar & Basic Details Row -->
-        <div class="px-6 md:px-8 pb-8 -mt-16 relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           
-          <div class="flex items-start md:items-end gap-5">
-            <!-- Avatar Image -->
-            <div class="relative group">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            
+            <!-- Avatar Image with Camera Upload Button Overlay -->
+            <div class="relative group shrink-0">
               <img 
                 :src="profile.avatar" 
                 :alt="profile.user_name" 
-                class="w-28 h-28 md:w-32 md:h-32 rounded-3xl object-cover border-4 border-white dark:border-slate-900 shadow-xl bg-white shrink-0" 
+                class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover border-2 border-slate-200/80 dark:border-slate-700/80 shadow-md bg-white" 
               />
+              
+              <!-- Avatar Upload Camera Button -->
               <button 
-                @click="openEditModal" 
-                class="absolute bottom-1 right-1 p-2 bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition cursor-pointer" 
-                title="Change Avatar"
+                @click="triggerAvatarUpload" 
+                type="button"
+                class="absolute -bottom-1 -right-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-lg transition cursor-pointer hover:scale-105 active:scale-95 border-2 border-white dark:border-slate-900" 
+                title="Upload Profile Photo"
               >
                 <Camera class="w-4 h-4" />
               </button>
             </div>
 
-            <div class="space-y-1.5 pt-2">
+            <!-- Profile Main Information -->
+            <div class="space-y-2">
               <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                   {{ profile.user_name }}
                 </h1>
+                
+                <!-- Open To Work Badge -->
+                <span 
+                  v-if="profile.is_open_to_work" 
+                  class="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold px-3 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-900/50 flex items-center gap-1.5"
+                >
+                  <Sparkles class="w-3.5 h-3.5 text-emerald-500" /> Open to Work
+                </span>
+
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold border" :class="availabilityBadgeStyle(profile.availability)">
                   {{ formatAvailability(profile.availability) }}
                 </span>
@@ -177,21 +203,40 @@ const handleFileUpload = (e) => {
                 <Briefcase class="w-4 h-4" /> {{ profile.headline }}
               </p>
 
-              <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                <MapPin class="w-4 h-4 text-slate-400" />
-                {{ profile.address ? `${profile.address}, ` : '' }}{{ profile.city }}, {{ profile.country }}
-              </p>
+              <div class="flex items-center gap-4 flex-wrap text-xs text-slate-500 dark:text-slate-400 font-medium pt-1">
+                <span class="flex items-center gap-1.5">
+                  <MapPin class="w-4 h-4 text-slate-400" />
+                  {{ profile.address ? `${profile.address}, ` : '' }}{{ profile.city }}, {{ profile.country }}
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <Mail class="w-4 h-4 text-slate-400" />
+                  {{ profile.email }}
+                </span>
+              </div>
             </div>
+
           </div>
 
-          <!-- Edit Profile Action Button -->
-          <button 
-            @click="openEditModal"
-            class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-md shadow-blue-500/20 transition active:scale-95 cursor-pointer shrink-0"
-          >
-            <Edit3 class="w-4 h-4" />
-            <span>Edit Candidate Profile</span>
-          </button>
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2.5 w-full md:w-auto shrink-0 flex-wrap pt-2 md:pt-0">
+            <button 
+              @click="triggerAvatarUpload"
+              type="button"
+              class="flex-1 md:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-2xl border border-slate-200 dark:border-slate-700 transition active:scale-95 cursor-pointer"
+            >
+              <Camera class="w-4 h-4 text-blue-600" />
+              <span>Change Photo</span>
+            </button>
+
+            <button 
+              @click="openEditModal"
+              type="button"
+              class="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-md shadow-blue-500/20 transition active:scale-95 cursor-pointer"
+            >
+              <Edit3 class="w-4 h-4" />
+              <span>Edit Profile</span>
+            </button>
+          </div>
 
         </div>
 
@@ -391,6 +436,21 @@ const handleFileUpload = (e) => {
 
         <form @submit.prevent="saveProfile" class="space-y-4 text-xs">
           
+          <!-- Image Upload Action in Modal -->
+          <div class="p-4 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl space-y-3">
+            <h4 class="font-bold text-slate-900 dark:text-white">Profile Photo</h4>
+            <div class="flex items-center gap-3">
+              <button 
+                type="button" 
+                @click="triggerAvatarUpload" 
+                class="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold hover:bg-slate-100 flex items-center gap-2"
+              >
+                <Camera class="w-4 h-4 text-blue-600" />
+                <span>Upload New Profile Photo</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Headline -->
           <div class="space-y-1">
             <label class="font-bold text-slate-700 dark:text-slate-300">Professional Headline</label>
