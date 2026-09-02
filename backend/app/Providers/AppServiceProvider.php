@@ -16,14 +16,14 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register any application services.
      */
-     protected $policies = [
-        Application::class => ApplicationPolicy::class,
-    ];
     public function register(): void
     {
         //
     }
 
+    protected $policies = [
+        Application::class => ApplicationPolicy::class,
+    ];
     /**
      * Bootstrap any application services.
      */
