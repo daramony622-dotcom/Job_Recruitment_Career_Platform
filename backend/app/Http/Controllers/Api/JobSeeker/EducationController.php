@@ -24,23 +24,18 @@ class EducationController extends Controller
     {
         $user = request()->user();
 
-        $query = Education::query()->with(['profile']);
+        $query = Education::query()->with(['user']);
 
         if ($user->hasRole('admin')) {
-            // Admin sees all education records
+            // Admin can see all education records
         } elseif ($user->hasRole('company') || $user->hasRole('hr')) {
-            // Companies/HR can see education records of visible profiles
-            $query->whereHas('profile', function ($q) {
-                $q->where('is_profile_visible', true);
-            });
+            // Company/HR can see education records
         } else {
-            // Job seeker sees their own profile's education records
-            $query->whereHas('profile', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
+            // Job seekers can only see their own education records
+            $query->where('user_id', $user->id);
         }
 
-        $educations = $query->latest()->get();
+        $educations = $query->latest('start_date')->get();
 
         return EducationResource::collection($educations);
     }
@@ -52,16 +47,12 @@ class EducationController extends Controller
     {
         $data = $request->validated();
 
-        $user = request()->user();
-        if (!$user->hasRole('admin') && !isset($data['profile_id'])) {
-            $profile = $user->profile()->first();
-            if ($profile) {
-                $data['profile_id'] = $profile->id;
-            }
+        if (!isset($data['user_id']) && !request()->user()->hasRole('admin')) {
+            $data['user_id'] = request()->user()->id;
         }
 
         $education = Education::create($data);
-        $education->load(['profile']);
+        $education->load(['user']);
 
         return new EducationResource($education);
     }
@@ -71,7 +62,7 @@ class EducationController extends Controller
      */
     public function show(Education $education): EducationResource
     {
-        $education->load(['profile']);
+        $education->load(['user']);
 
         return new EducationResource($education);
     }
@@ -82,7 +73,7 @@ class EducationController extends Controller
     public function update(UpdateEducationRequest $request, Education $education): EducationResource
     {
         $education->update($request->validated());
-        $education->load(['profile']);
+        $education->load(['user']);
 
         return new EducationResource($education);
     }
