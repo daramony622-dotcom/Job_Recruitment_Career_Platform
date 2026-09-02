@@ -12,7 +12,7 @@ class StoreProfileRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,12 @@ class StoreProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'headline' => ['sometimes', 'required', 'string', 'max:255'],
+            'bio' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today'],
+            'gender' => ['sometimes', 'nullable', 'string', 'in:male,female,other'],
         ];
     }
 }

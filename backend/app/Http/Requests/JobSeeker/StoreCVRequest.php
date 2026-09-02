@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\JobSeeker;
+namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class UploadCVRequest extends FormRequest
+class StoreCVRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Requests\JobSeeker;
+namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class UploadCVRequest extends FormRequest
+class StoreSavedJobRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,9 +24,14 @@ class UploadCVRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'file_path' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:5120'], // Max 5MB
-            'is_primary' => ['sometimes', 'boolean'],
+            'job_id' => [
+                'required',
+                'integer',
+                'exists:jobs,id',
+                Rule::unique('saved_jobs', 'job_id')->where(function ($query) {
+                    return $query->where('user_id', $this->user()->id);
+                }),
+            ],
         ];
     }
 }
