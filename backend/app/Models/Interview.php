@@ -46,7 +46,15 @@ class Interview extends Model
 
     public function job(): BelongsTo
     {
-        return $this->belongsTo(Job::class, 'job_post_id');
+        return $this->belongsTo(JobPost::class, 'job_post_id');
+    }
+
+    /**
+     * Alias for job() used in eager loading.
+     */
+    public function jobPost(): BelongsTo
+    {
+        return $this->belongsTo(JobPost::class, 'job_post_id');
     }
 
     public function applicant(): BelongsTo

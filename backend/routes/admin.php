@@ -29,8 +29,10 @@ Route::name('admin.')->group(function () {
     Route::match(['put', 'patch'], 'companies/{company}/status', [CompanyController::class, 'updateStatus'])->name('companies.updateStatus');
 
     // Manage Job Categories, Posts, & Skills
-    Route::apiResource('job-categories', JobCategoryController::class);
-    Route::apiResource('job-posts', JobPostController::class);
+    Route::apiResource('job-categories', JobCategoryController::class)
+        ->parameters(['job-categories' => 'jobCategory']);
+    Route::apiResource('job-posts', JobPostController::class)
+        ->parameters(['job-posts' => 'jobPost']);
     Route::post('job-posts/{id}/restore', [JobPostController::class, 'restore'])
         ->name('job-posts.restore');
     Route::delete('job-posts/{id}/force-delete', [JobPostController::class, 'forceDelete'])
@@ -41,10 +43,12 @@ Route::name('admin.')->group(function () {
 
     // Queue Jobs Management (jobs, job-batches, failed-jobs)
     Route::apiResource('jobs', JobController::class);
-    Route::apiResource('job-batches', JobBatchController::class);
+    Route::apiResource('job-batches', JobBatchController::class)
+        ->parameters(['job-batches' => 'jobBatch']);
     Route::post('failed-jobs/{failedJob}/retry', [FailedJobController::class, 'retry'])->name('failed-jobs.retry');
     Route::delete('failed-jobs/flush', [FailedJobController::class, 'flush'])->name('failed-jobs.flush');
-    Route::apiResource('failed-jobs', FailedJobController::class);
+    Route::apiResource('failed-jobs', FailedJobController::class)
+        ->parameters(['failed-jobs' => 'failedJob']);
 
     // View Applications & Interviews (Read-Only)
     Route::apiResource('applications', ApplicationController::class)->only(['index', 'show']);

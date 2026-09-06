@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Interview;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class InterviewPolicy
 {
@@ -13,7 +12,7 @@ class InterviewPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true; // Scoped by role inside InterviewService / Controller
     }
 
     /**
@@ -21,6 +20,18 @@ class InterviewPolicy
      */
     public function view(User $user, Interview $interview): bool
     {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($interview->applicant_id === $user->id || $interview->interviewer_id === $user->id) {
+            return true;
+        }
+
+        if ($user->company && $interview->job && $interview->job->company_id === $user->company->id) {
+            return true;
+        }
+
         return false;
     }
 
@@ -29,7 +40,7 @@ class InterviewPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->isAdmin() || $user->hasRole('hr') || $user->hasRole('company');
     }
 
     /**
@@ -37,6 +48,18 @@ class InterviewPolicy
      */
     public function update(User $user, Interview $interview): bool
     {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($interview->interviewer_id === $user->id) {
+            return true;
+        }
+
+        if ($user->company && $interview->job && $interview->job->company_id === $user->company->id) {
+            return true;
+        }
+
         return false;
     }
 
@@ -45,6 +68,18 @@ class InterviewPolicy
      */
     public function delete(User $user, Interview $interview): bool
     {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($interview->interviewer_id === $user->id) {
+            return true;
+        }
+
+        if ($user->company && $interview->job && $interview->job->company_id === $user->company->id) {
+            return true;
+        }
+
         return false;
     }
 
@@ -53,7 +88,7 @@ class InterviewPolicy
      */
     public function restore(User $user, Interview $interview): bool
     {
-        return false;
+        return $user->isAdmin();
     }
 
     /**
@@ -61,6 +96,6 @@ class InterviewPolicy
      */
     public function forceDelete(User $user, Interview $interview): bool
     {
-        return false;
+        return $user->isAdmin();
     }
 }

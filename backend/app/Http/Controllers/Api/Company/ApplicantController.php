@@ -34,13 +34,16 @@ class ApplicantController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => $applications
+            'data'   => $applications,
+            'Horn'=> "That's La peacee" 
+
         ]);
     }
 
     /**
      * Display the specified applicant's application.
      */
+
     public function show(Application $application): JsonResponse
     {
         $this->authorize('view', $application);

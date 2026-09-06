@@ -38,7 +38,7 @@ const categories = ref([
         v-for="cat in categories" 
         :key="cat.title"
         to="/jobs"
-        class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition duration-200 cursor-pointer group"
+        class="bg-blue-50 dark:bg-blue-950/60 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/70 shadow-xs flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition duration-200 cursor-pointer group"
       >
         <div :class="[cat.bg, cat.text]" class="p-3 rounded-xl font-bold text-lg flex items-center justify-center w-12 h-12 shrink-0 group-hover:scale-105 transition transform">
           <component :is="cat.icon" class="w-6 h-6" />
