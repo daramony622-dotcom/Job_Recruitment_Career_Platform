@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
 import { 
   Mail, Lock, Eye, EyeOff, Send, ArrowLeft, 
   Briefcase, CheckCircle2, ShieldCheck, Sparkles 
@@ -14,13 +15,21 @@ const password = ref('')
 const rememberMe = ref(false)
 const showPassword = ref(false)
 const isSubmitting = ref(false)
+const loginError = ref('')
+const { login } = useAuth()
 
-const handleLogin = () => {
+const handleLogin = async () => {
   isSubmitting.value = true
-  setTimeout(() => {
-    isSubmitting.value = false
+  loginError.value = ''
+
+  try {
+    await login(email.value, password.value)
     router.push('/profile')
-  }, 1000)
+  } catch (error) {
+    loginError.value = error.message
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -114,6 +123,9 @@ const handleLogin = () => {
         </div>
 
         <form @submit.prevent="handleLogin" class="space-y-5">
+          <div v-if="loginError" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700" role="alert">
+            {{ loginError }}
+          </div>
           
           <!-- Email Field -->
           <div class="space-y-1.5">

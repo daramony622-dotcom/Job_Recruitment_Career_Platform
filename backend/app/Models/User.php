@@ -71,11 +71,24 @@ class User extends Authenticatable
 
     public function isHr(): bool
     {
-        return $this->role === 'hr';
+        return in_array($this->role, ['hr', 'company']);
     }
 
     public function isUser(): bool
     {
-        return $this->role === 'user';
+        return $this->role === 'user' || $this->role === 'job_seeker';
+    }
+
+    public function hasRole(string|array $roles): bool
+    {
+        if (is_array($roles)) {
+            return in_array($this->role, $roles);
+        }
+
+        if ($roles === 'job_seeker' || $roles === 'user') {
+            return in_array($this->role, ['user', 'job_seeker']);
+        }
+
+        return $this->role === $roles;
     }
 }

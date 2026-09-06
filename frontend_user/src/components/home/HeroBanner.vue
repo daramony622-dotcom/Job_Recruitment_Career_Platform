@@ -48,12 +48,12 @@ const selectTag = (tag) => {
   <section class="relative min-h-[540px] w-full bg-cover bg-center flex items-center px-4 sm:px-8 py-16 text-white overflow-hidden rounded-3xl bg-[url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1920&auto=format&fit=crop')] shadow-xl my-2">
     
     <!-- Dark Gradient Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/90 to-blue-950/75"></div>
+    <div class="absolute inset-0 bg-gradient-to-r from-slate-950/78 via-slate-900/55 to-blue-950/30"></div>
 
     <div class="relative z-10 max-w-5xl mx-auto w-full space-y-8">
       
       <!-- Top Badge -->
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-slate-200 shadow-sm">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-white/70 text-xs font-semibold text-slate-700 shadow-sm">
         <span class="flex h-2 w-2 relative">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
           <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
@@ -68,7 +68,7 @@ const selectTag = (tag) => {
           <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300">dream career role</span>
         </h1>
 
-        <p class="text-slate-300 text-sm sm:text-base md:text-lg max-w-2xl font-medium leading-relaxed">
+        <p class="text-slate-100 text-sm sm:text-base md:text-lg max-w-2xl font-medium leading-relaxed">
           Search thousands of verified full-time, remote, and hybrid positions across top tech & business employers.
         </p>
       </div>

@@ -12,7 +12,7 @@ import { ArrowRight, UserCheck } from 'lucide-vue-next'
   <div class="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-200">
     <Navbar />
 
-    <main class="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-12">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-14">
       <!-- 1. Hero Banner -->
       <HeroBanner />
 
@@ -32,7 +32,7 @@ import { ArrowRight, UserCheck } from 'lucide-vue-next'
       </section>
 
 <!-- 4. Call to Action Banner -->
-      <section class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-8 sm:p-12 text-white shadow-xl shadow-blue-500/10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center relative overflow-hidden">
+      <section class="bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-950 dark:to-slate-900 rounded-3xl p-8 sm:p-12 text-white shadow-xl shadow-blue-500/10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-center relative overflow-hidden">
         <!-- Subtle decorative background glow -->
         <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
 

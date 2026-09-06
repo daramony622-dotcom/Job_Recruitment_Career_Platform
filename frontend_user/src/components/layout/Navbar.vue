@@ -1,10 +1,19 @@
 <script setup>
-import { Bell, LogIn, UserPlus } from 'lucide-vue-next'
+import { Bell, LogIn, UserPlus, LogOut } from 'lucide-vue-next'
 import { useRoute } from 'vue-router'
-import ThemeToggle from '../common/ThemeToggle.vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '../../composables/useAuth'
 import LanguageSwitcher from '../common/LanguageSwitcher.vue'
+import ThemeToggle from '../common/ThemeToggle.vue'
 
 const route = useRoute()
+const router = useRouter()
+const { user, isAuthenticated, logout } = useAuth()
+
+const handleLogout = async () => {
+  await logout()
+  router.push('/login')
+}
 
 const navItems = [
   { name: 'Find Jobs', path: '/jobs' },
@@ -47,7 +56,6 @@ const navItems = [
       <!-- Language Switcher Component -->
       <LanguageSwitcher />
 
-      <!-- Click Dark Mode Toggle Button Component -->
       <ThemeToggle />
 
       <!-- Notifications Bell → links to /notifications -->
@@ -57,7 +65,7 @@ const navItems = [
       </router-link>
 
       <!-- Auth Action Buttons -->
-      <div class="flex items-center gap-2 ml-1">
+      <div v-if="!isAuthenticated" class="flex items-center gap-2 ml-1">
         <router-link to="/login" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5">
           <LogIn class="w-4 h-4" />
           <span>Login</span>
@@ -66,6 +74,14 @@ const navItems = [
           <UserPlus class="w-4 h-4" />
           <span>Register</span>
         </router-link>
+      </div>
+      <div v-else class="flex items-center gap-2 ml-1">
+        <router-link to="/profile" class="text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400">
+          {{ user?.name || 'Profile' }}
+        </router-link>
+        <button type="button" @click="handleLogout" class="p-2 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 rounded-xl transition" aria-label="Log out" title="Log out">
+          <LogOut class="w-4 h-4" />
+        </button>
       </div>
 
     </div>

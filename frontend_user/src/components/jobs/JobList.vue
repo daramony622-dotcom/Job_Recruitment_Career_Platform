@@ -1,92 +1,48 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import JobCard from './JobCard.vue'
 import { Filter, SlidersHorizontal, Search } from 'lucide-vue-next'
+import { useAuth } from '../../composables/useAuth'
 
 const activeFilter = ref('All')
 const filterOptions = ['All', 'Full-time', 'Hybrid', 'Remote', 'Internship', 'Contract']
 const searchQuery = ref('')
+const jobs = ref([])
+const isLoading = ref(false)
+const error = ref('')
+const { request } = useAuth()
 
-// Sample jobs list
-const jobs = ref([
-  {
-    id: 1,
-    title: 'Senior Full Stack Laravel & Vue.js Developer',
-    slug: 'senior-full-stack-laravel-vue-developer',
-    description: 'We are looking for an experienced developer to build high-performance web applications using Laravel 11 and Vue 3.',
-    job_type: 'Full-time',
-    work_mode: 'Hybrid',
-    experience_level: 'Senior Level',
-    location: 'Monivong Blvd',
-    city: 'Phnom Penh',
-    country: 'Cambodia',
-    salary_min: 1200,
-    salary_max: 2200,
-    salary_currency: 'USD',
-    salary_period: 'monthly',
-    is_salary_visible: true,
-    vacancies: 3,
-    deadline: '2026-04-30',
-    status: 'published',
-    is_featured: true,
-    views_count: 542,
-    published_at: '2026-03-01'
-  },
-  {
-    id: 2,
-    title: 'Junior Network & Support Engineer',
-    slug: 'junior-network-support-engineer',
-    description: 'Seeking a motivated IT student or junior engineer to assist with network routing, hardware support, and system maintenance.',
-    job_type: 'Contract',
-    work_mode: 'Onsite',
-    experience_level: 'Junior Level',
-    location: 'Toul Kork',
-    city: 'Phnom Penh',
-    country: 'Cambodia',
-    salary_min: 500,
-    salary_max: 800,
-    salary_currency: 'USD',
-    salary_period: 'monthly',
-    is_salary_visible: true,
-    vacancies: 1,
-    deadline: '2026-04-20',
-    status: 'published',
-    is_featured: false,
-    views_count: 230,
-    published_at: '2026-03-05'
-  },
-  {
-    id: 3,
-    title: 'Lead UI/UX Product Designer',
-    slug: 'lead-ui-ux-product-designer',
-    description: 'Design intuitive, modern web and mobile user interfaces for our fast-growing career and recruitment platform.',
-    job_type: 'Full-time',
-    work_mode: 'Remote',
-    experience_level: 'Mid Level',
-    location: 'BKK1',
-    city: 'Phnom Penh',
-    country: 'Cambodia',
-    salary_min: 900,
-    salary_max: 1600,
-    salary_currency: 'USD',
-    salary_period: 'monthly',
-    is_salary_visible: true,
-    vacancies: 2,
-    deadline: '2026-05-10',
-    status: 'published',
-    is_featured: true,
-    views_count: 412,
-    published_at: '2026-03-08'
+const filterParams = {
+  'Full-time': { job_type: 'full_time' },
+  Hybrid: { work_mode: 'hybrid' },
+  Remote: { work_mode: 'remote' },
+  Internship: { job_type: 'internship' },
+  Contract: { job_type: 'contract' },
+}
+
+const fetchJobs = async () => {
+  isLoading.value = true
+  error.value = ''
+
+  const params = new URLSearchParams()
+  if (searchQuery.value.trim()) params.set('search', searchQuery.value.trim())
+  Object.entries(filterParams[activeFilter.value] || {}).forEach(([key, value]) => params.set(key, value))
+
+  try {
+    const response = await request(`/jobs/search?${params.toString()}`)
+    jobs.value = response.data?.data || []
+  } catch (requestError) {
+    error.value = requestError.message
+    jobs.value = []
+  } finally {
+    isLoading.value = false
   }
-])
+}
 
-const filteredJobs = computed(() => {
-  return jobs.value.filter(job => {
-    const matchesFilter = activeFilter.value === 'All' || job.job_type === activeFilter.value || job.work_mode === activeFilter.value
-    const matchesQuery = !searchQuery.value || job.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || job.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-    return matchesFilter && matchesQuery
-  })
-})
+const filteredJobs = computed(() => jobs.value)
+
+onMounted(fetchJobs)
+watch([searchQuery, activeFilter], fetchJobs)
 </script>
 
 <template>
@@ -111,7 +67,9 @@ const filteredJobs = computed(() => {
       <!-- Quick Search Bar -->
       <div class="relative w-full sm:w-64">
         <Search class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <label for="job-search" class="sr-only">Search jobs</label>
         <input 
+          id="job-search"
           v-model="searchQuery"
           type="text" 
           placeholder="Filter jobs..." 
@@ -121,8 +79,16 @@ const filteredJobs = computed(() => {
 
     </div>
 
+    <div v-if="isLoading" class="py-12 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
+      Loading jobs...
+    </div>
+
+    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm font-semibold text-red-700">
+      {{ error }}
+    </div>
+
     <!-- Job Cards List -->
-    <div v-if="filteredJobs.length > 0" class="space-y-4">
+    <div v-else-if="filteredJobs.length > 0" class="space-y-4">
       <JobCard :job-posts="filteredJobs" />
     </div>
 

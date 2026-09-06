@@ -1,14 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap');
 @import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 html.dark {
   color-scheme: dark;
 }
 
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #172033;
+  background: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
 body {
+  background-color: #ffffff;
+  margin: 0;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+html:not(.dark) .bg-slate-50 {
+  background-color: #ffffff;
+}
+
+::selection {
+  color: #ffffff;
+  background: #2563eb;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgb(37 99 235 / 22%);
+  outline-offset: 2px;
+}
+
+html.dark body {
+  background-color: #020617;
 }
 
 /* Custom Scrollbar for Dark Mode */

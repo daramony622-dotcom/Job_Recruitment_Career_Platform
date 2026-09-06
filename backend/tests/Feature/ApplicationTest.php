@@ -162,6 +162,35 @@ class ApplicationTest extends TestCase
         ]);
     }
 
+    public function test_job_seeker_role_can_access_interviews_via_user_routes(): void
+    {
+        $jobSeeker = User::factory()->create(['role' => 'job_seeker']);
+        $application = Application::create([
+            'job_post_id' => $this->jobPost->id,
+            'user_id' => $jobSeeker->id,
+            'status' => 'pending',
+        ]);
+
+        \App\Models\Interview::create([
+            'application_id' => $application->id,
+            'job_post_id' => $this->jobPost->id,
+            'applicant_id' => $jobSeeker->id,
+            'interviewer_id' => $this->hr->id,
+            'interview_type' => 'video',
+            'title' => 'Technical Interview',
+            'scheduled_at' => now()->addDay(),
+            'duration_minutes' => 45,
+            'status' => 'scheduled',
+            'result' => 'pending',
+        ]);
+
+        Sanctum::actingAs($jobSeeker);
+
+        $this->getJson('/api/user/interviews')
+            ->assertOk()
+            ->assertJsonPath('data.0.applicant_id', $jobSeeker->id);
+    }
+
     public function test_admin_can_view_all_applications(): void
     {
         Application::create([

@@ -167,7 +167,7 @@ const goToDetail = (id) => {
     <div 
       v-for="job in activePosts" 
       :key="job.id"
-      class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 md:p-7 shadow-xs hover:shadow-md transition duration-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden group"
+      class="bg-blue-50 dark:bg-blue-950/60 rounded-3xl border border-blue-100 dark:border-blue-900/70 p-6 md:p-7 shadow-xs hover:shadow-md transition duration-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden group"
     >
       <!-- Featured Top Badge -->
       <div v-if="job.is_featured" class="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold uppercase px-3.5 py-1 rounded-bl-2xl tracking-wider flex items-center gap-1 shadow-2xs">

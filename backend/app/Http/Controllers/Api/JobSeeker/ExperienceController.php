@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\JobSeeker;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreExperienceRequest;
-use App\Http\Requests\UpdateExperienceRequest;
+use App\Http\Requests\Experience\StoreExperienceRequest;
+use App\Http\Requests\Experience\UpdateExperienceRequest;
 use App\Http\Resources\ExperienceResource;
 use App\Models\Experience;
 use Illuminate\Http\JsonResponse;

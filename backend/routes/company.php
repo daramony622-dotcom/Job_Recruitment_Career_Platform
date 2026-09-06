@@ -1,7 +1,5 @@
 <?php
 
-namespace App\Http\Controllers\Api\Company;
-
 use App\Http\Controllers\Api\Company\ApplicantController;
 use App\Http\Controllers\Api\Company\CompanyProfileController;
 use App\Http\Controllers\Api\Company\InterviewController;
@@ -25,7 +23,8 @@ Route::put('profile', [CompanyProfileController::class, 'update']);
 // Routes requiring an associated company profile
 Route::middleware('has.company')->group(function () {
     // Job Posts
-    Route::apiResource('job-posts', JobPostController::class);
+    Route::apiResource('job-posts', JobPostController::class)
+        ->parameters(['job-posts' => 'jobPost']);
     Route::post('job-posts/{id}/restore', [JobPostController::class, 'restore'])
         ->name('company.job-posts.restore');
     Route::post('job-posts/{jobPost}/toggle-featured', [JobPostController::class, 'toggleFeatured'])
@@ -38,8 +37,10 @@ Route::middleware('has.company')->group(function () {
     Route::patch('applicants/{application}/reject', [ApplicantController::class, 'reject']);
     Route::patch('applicants/{application}/status', [ApplicantController::class, 'updateStatus']);
 
-    // Interviews
+    // Interviews (Company can schedule, update, cancel, delete — not destroy except by admin)
     Route::apiResource('interviews', InterviewController::class)->except(['destroy']);
+    Route::patch('interviews/{interview}/cancel', [InterviewController::class, 'cancel'])
+        ->name('company.interviews.cancel');
 
     // Reports
     Route::get('reports', [ReportController::class, 'index']);
