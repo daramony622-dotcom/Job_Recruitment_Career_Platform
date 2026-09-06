@@ -7,8 +7,6 @@ const props = defineProps({
     required: true,
   },
 })
-
-const emit = defineEmits(['view'])
 </script>
 
 <template>
@@ -109,13 +107,13 @@ const emit = defineEmits(['view'])
           <span class="ml-auto bg-blue-500 rounded-full px-1.5 text-xs">{{ company.active_openings }}</span>
         </router-link>
 
-        <button
-          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 text-slate-200 text-sm font-semibold hover:border-blue-500 hover:text-blue-400 transition-colors"
-          @click="emit('view', company)"
+        <router-link
+          :to="`/companies/${company.id}`"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 text-slate-200 text-sm font-semibold hover:border-blue-500 hover:text-blue-400 hover:bg-slate-800 transition-colors"
         >
           <span>View Company Profile</span>
           <ArrowRight class="w-4 h-4" />
-        </button>
+        </router-link>
       </div>
     </div>
   </article>

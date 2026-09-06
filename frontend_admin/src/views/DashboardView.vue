@@ -15,6 +15,7 @@ import StatusBadge from '../components/StatusBadge.vue'
 
 const loading = ref(false)
 const error = ref('')
+const offline = ref(false)
 
 const summary = ref({
   total_jobs: 0,
@@ -28,17 +29,81 @@ const jobSummary = ref([])
 const recentJobs = ref([])
 const recentApplications = ref([])
 
+const mockData = {
+  summary: {
+    total_jobs: 128,
+    published_jobs: 92,
+    total_candidates: 1540,
+    total_companies: 47,
+    total_applications: 890,
+  },
+  jobSummary: [
+    { status: 'published', count: 92 },
+    { status: 'draft', count: 18 },
+    { status: 'closed', count: 12 },
+    { status: 'expired', count: 6 },
+  ],
+  recentJobs: [
+    { id: 1, title: 'Senior Frontend Developer', status: 'published', company: { name: 'TechNova' }, city: 'Ho Chi Minh City' },
+    { id: 2, title: 'Backend Engineer (PHP/Laravel)', status: 'published', company: { name: 'CloudWorks' }, city: 'Ha Noi' },
+    { id: 3, title: 'Full Stack Developer', status: 'draft', company: { name: 'FinEdge' }, city: 'Da Nang' },
+    { id: 4, title: 'DevOps Engineer', status: 'closed', company: { name: 'DataCore' }, city: 'Ho Chi Minh City' },
+    { id: 5, title: 'UI/UX Designer', status: 'published', company: { name: 'PixelStudio' }, city: 'Ha Noi' },
+  ],
+  recentApplications: [
+    { id: 1, status: 'in_review', jobSeeker: { name: 'Nguyen Van A' }, jobPost: { title: 'Senior Frontend Developer', company: { name: 'TechNova' } } },
+    { id: 2, status: 'shortlisted', jobSeeker: { name: 'Tran Thi B' }, jobPost: { title: 'Backend Engineer (PHP/Laravel)', company: { name: 'CloudWorks' } } },
+    { id: 3, status: 'pending', jobSeeker: { name: 'Le Van C' }, jobPost: { title: 'Full Stack Developer', company: { name: 'FinEdge' } } },
+    { id: 4, status: 'hired', jobSeeker: { name: 'Pham Thi D' }, jobPost: { title: 'DevOps Engineer', company: { name: 'DataCore' } } },
+    { id: 5, status: 'rejected', jobSeeker: { name: 'Hoang Van E' }, jobPost: { title: 'UI/UX Designer', company: { name: 'PixelStudio' } } },
+  ],
+}
+
+function isOfflineError(e) {
+  return e.code === 'ECONNABORTED' || !e.response
+}
+
+function applyMockData() {
+  summary.value = { ...mockData.summary }
+  jobSummary.value = mockData.jobSummary
+  recentJobs.value = mockData.recentJobs
+  recentApplications.value = mockData.recentApplications
+}
+
 function countBy(items, key) {
   const map = {}
   for (const item of items) {
-    const val = item[key] || 'unknown'
+    const val = item?.[key] || 'unknown'
     map[val] = (map[val] || 0) + 1
   }
   return map
 }
 
-function unwrapPager(res) {
-  return res.data?.data || res.data
+function extractPager(res) {
+  const body = res?.data
+  if (Array.isArray(body)) {
+    return { data: body, total: body.length }
+  }
+  const pager = body?.data && typeof body.data === 'object' && !Array.isArray(body.data)
+    ? body.data
+    : body
+  if (pager && typeof pager.total !== 'number') {
+    pager.total = Array.isArray(pager.data) ? pager.data.length : 0
+  }
+  return pager || { data: [], total: 0 }
+}
+
+function getErrorMessage(e) {
+  if (e.code === 'ECONNABORTED') {
+    return 'The request timed out. The backend server may be slow or unreachable.'
+  }
+  if (!e.response) {
+    return 'Unable to reach the backend server. Please check your connection and ensure the API (http://localhost:8000/api) is running.'
+  }
+  if (e.response.status >= 500) {
+    return `Server error (${e.response.status}). The backend encountered an issue. Please try again later.`
+  }
+  return e.response.data?.message || `Request failed with status ${e.response.status}.`
 }
 
 async function fetchDashboard() {
@@ -52,14 +117,15 @@ async function fetchDashboard() {
       adminApi.getApplications({ per_page: 100 }),
     ])
 
-    const jobPager = jobs.data
-    const jobsData = jobPager.data || []
-    const userPager = unwrapPager(users)
-    const candidatesData = userPager.data || []
-    const companyPager = unwrapPager(companies)
-    const companiesData = companyPager.data || []
-    const appPager = unwrapPager(applications)
-    const applicationsData = appPager.data || []
+    const jobPager = extractPager(jobs)
+    const userPager = extractPager(users)
+    const companyPager = extractPager(companies)
+    const appPager = extractPager(applications)
+
+    const jobsData = Array.isArray(jobPager.data) ? jobPager.data : []
+    const candidatesData = Array.isArray(userPager.data) ? userPager.data : []
+    const companiesData = Array.isArray(companyPager.data) ? companyPager.data : []
+    const applicationsData = Array.isArray(appPager.data) ? appPager.data : []
 
     const statusCounts = countBy(jobsData, 'status')
 
@@ -75,7 +141,11 @@ async function fetchDashboard() {
     recentJobs.value = jobsData.slice(0, 5)
     recentApplications.value = applicationsData.slice(0, 5)
   } catch (e) {
-    error.value = e.response?.data?.message || 'Failed to load dashboard.'
+    error.value = getErrorMessage(e)
+    if (isOfflineError(e)) {
+      offline.value = true
+      applyMockData()
+    }
   } finally {
     loading.value = false
   }
@@ -110,9 +180,29 @@ onMounted(fetchDashboard)
       </button>
     </div>
 
-    <p v-if="error" class="mb-4 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+    <div
+      v-if="offline"
+      class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3"
+    >
+      <div>
+        <p class="text-sm font-semibold text-amber-300">Backend is offline — showing sample data</p>
+        <p class="text-xs text-amber-200/70 mt-0.5">Could not reach {{ 'http://localhost:8000/api' }}. The figures below are placeholder values.</p>
+      </div>
+      <button
+        @click="fetchDashboard"
+        class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-100 transition-colors shrink-0"
+      >
+        <RefreshCw class="w-3.5 h-3.5" />
+        Retry
+      </button>
+    </div>
+
+    <div
+      v-else-if="error"
+      class="mb-4 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3"
+    >
       {{ error }}
-    </p>
+    </div>
 
     <p v-if="loading" class="text-sm text-slate-400 mb-4">Loading dashboard...</p>
 

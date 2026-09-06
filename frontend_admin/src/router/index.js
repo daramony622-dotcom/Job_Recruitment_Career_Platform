@@ -27,6 +27,16 @@ const routes = [
     component: () => import('../views/CandidatesView.vue'),
   },
   {
+    path: '/candidates/:id',
+    name: 'CandidateDetail',
+    component: () => import('../views/CandidateDetailView.vue'),
+  },
+  {
+    path: '/job-posts/:id',
+    name: 'JobPostDetail',
+    component: () => import('../views/JobPostDetailView.vue'),
+  },
+  {
     path: '/reports',
     name: 'Reports',
     component: () => import('../views/ReportsView.vue'),
