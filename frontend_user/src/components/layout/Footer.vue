@@ -13,10 +13,10 @@ const socialLinks = [
 </script>
 
 <template>
-  <footer class="bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 py-12 border-t border-slate-200 dark:border-slate-800 font-sans transition-colors duration-200">
+  <footer class="bg-slate-800 backdrop-blur-md text-slate-700 py-10 border-t border-slate-200/80 shadow-lg font-sans">
     <div class="max-w-7xl mx-auto px-6 lg:px-8 space-y-8">
       <!-- Main Content Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start pb-8 border-b border-slate-200 dark:border-slate-800">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start pb-8 border-b border-slate-200/80">
         
         <!-- Brand & Social Buttons (Takes 4 cols) -->
         <div class="space-y-4 md:col-span-4">
@@ -28,7 +28,7 @@ const socialLinks = [
             />
           </router-link>
 
-          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-sm">
+          <p class="text-xs text-white leading-relaxed max-w-sm">
             Connecting professionals with top employers globally through our intelligent career platform.
           </p>
 
@@ -38,7 +38,7 @@ const socialLinks = [
               :key="social.name"
               :href="social.href"
               :aria-label="social.name"
-              class="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:text-white hover:bg-blue-600 hover:border-blue-600 transition duration-200"
+              class="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-200/80 text-slate-500 hover:text-white hover:bg-blue-600 hover:border-blue-600 transition duration-200 shadow-sm"
             >
               <component :is="social.icon" class="w-4 h-4" />
             </a>
@@ -49,10 +49,10 @@ const socialLinks = [
         <div class="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
           <!-- For Job Seekers -->
           <div>
-            <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3">
               For Job Seekers
             </h4>
-            <ul class="space-y-2 text-xs text-slate-500 dark:text-slate-400">
+            <ul class="space-y-2 text-xs text-blue-500">
               <li><router-link to="/jobs" class="hover:text-blue-600 transition">Browse Jobs</router-link></li>
               <li><router-link to="/companies" class="hover:text-blue-600 transition">Top Companies</router-link></li>
               <li><router-link to="/profile" class="hover:text-blue-600 transition">My Profile</router-link></li>
@@ -61,10 +61,10 @@ const socialLinks = [
 
           <!-- Company -->
           <div>
-            <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3">
               Company
             </h4>
-            <ul class="space-y-2 text-xs text-slate-500 dark:text-slate-400">
+            <ul class="space-y-2 text-xs text-blue-500">
               <li><router-link to="/about" class="hover:text-blue-600 transition">About Us</router-link></li>
               <li><router-link to="/contact" class="hover:text-blue-600 transition">Contact Us</router-link></li>
               <li><router-link to="/jobs" class="hover:text-blue-600 transition">Career Opportunities</router-link></li>
@@ -73,14 +73,12 @@ const socialLinks = [
 
           <!-- Newsletter -->
           <div>
-            <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">
+            <h4 class="text-xs font-bold text-white uppercase tracking-wider mb-3">
               Newsletter
             </h4>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Get weekly job alerts in your inbox.</p>
+            <p class="text-xs text-blue-500 mb-2">Get weekly job alerts in your inbox.</p>
             <form @submit.prevent class="flex flex-col sm:flex-row gap-2">
-              <label for="footer-email" class="sr-only">Email address</label>
               <input
-                id="footer-email"
                 type="email"
                 placeholder="Your email address"
                 class="w-full bg-white/90 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 transition shadow-sm"
