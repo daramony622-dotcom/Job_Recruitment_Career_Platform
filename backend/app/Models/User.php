@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -25,7 +26,7 @@ class User extends Authenticatable
         'telegram_username',
         'telegram_photo',
     ];
-
+    
     public function getAvatarUrlAttribute(): ?string
     {
         return $this->telegram_photo ?? $this->avatar;
@@ -52,6 +53,11 @@ class User extends Authenticatable
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class);
+    }
+
+    public function cvs(): HasMany
+    {
+        return $this->hasMany(CV::class);
     }
 
     public function skills(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

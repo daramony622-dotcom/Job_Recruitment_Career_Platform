@@ -17,7 +17,7 @@ html.dark {
 body {
   background-color: #ffffff;
   margin: 0;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 html:not(.dark) .bg-slate-50 {
@@ -48,6 +48,33 @@ textarea:focus-visible {
 
 html.dark body {
   background-color: #020617;
+}
+
+html,
+body,
+#app,
+button,
+a,
+input,
+select,
+textarea,
+section,
+article,
+header,
+footer,
+div {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 /* Custom Scrollbar for Dark Mode */

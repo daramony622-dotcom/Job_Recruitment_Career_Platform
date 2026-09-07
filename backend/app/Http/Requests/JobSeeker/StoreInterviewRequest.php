@@ -15,9 +15,9 @@ class StoreInterviewRequest extends FormRequest
     {
         return [
             'application_id'      => ['required', 'exists:applications,id'],
-            'job_post_id'         => ['nullable', 'exists:job_posts,id'],
-            'applicant_id'        => ['nullable', 'exists:users,id'],
-            'interviewer_id'      => ['nullable', 'exists:users,id'],
+            'job_post_id'         => ['prohibited'],
+            'applicant_id'        => ['prohibited'],
+            'interviewer_id'      => ['prohibited'],
             'interview_type'      => ['nullable', 'in:phone,video,onsite,technical,panel'],
             'title'               => ['nullable', 'string', 'max:255'],
             'scheduled_at'        => ['required', 'date', 'after:now'],

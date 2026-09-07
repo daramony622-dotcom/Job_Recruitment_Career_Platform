@@ -50,9 +50,11 @@ Route::name('admin.')->group(function () {
     Route::apiResource('failed-jobs', FailedJobController::class)
         ->parameters(['failed-jobs' => 'failedJob']);
 
-    // View Applications & Interviews (Read-Only)
+    // View Applications and manage platform-wide interviews
     Route::apiResource('applications', ApplicationController::class)->only(['index', 'show']);
-    Route::apiResource('interviews', InterviewController::class)->only(['index', 'show']);
+    Route::apiResource('interviews', InterviewController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::patch('interviews/{interview}/cancel', [InterviewController::class, 'cancel'])
+        ->name('interviews.cancel');
 
     // Reports & Settings
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');

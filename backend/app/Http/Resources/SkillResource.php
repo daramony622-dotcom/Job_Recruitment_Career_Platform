@@ -21,6 +21,8 @@ class SkillResource extends JsonResource
             'category' => $this->category,
             'description' => $this->description,
             'is_active' => (bool) $this->is_active,
+            'level' => $this->when($this->pivot, $this->pivot?->level),
+            'is_required' => $this->when($this->pivot, (bool) $this->pivot?->is_required),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

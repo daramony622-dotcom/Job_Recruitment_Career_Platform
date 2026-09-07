@@ -13,6 +13,7 @@ class CompanyProfileController extends Controller
 {
     public function __construct(private readonly CompanyService $companyService)
     {
+        
     }
 
     // GET /hr/profile

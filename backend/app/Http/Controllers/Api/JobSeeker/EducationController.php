@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\JobSeeker;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreEducationRequest;
-use App\Http\Requests\UpdateEducationRequest;
+use App\Http\Requests\JobSeeker\StoreEducationRequest;
+use App\Http\Requests\JobSeeker\UpdateEducationRequest;
 use App\Http\Resources\EducationResource;
 use App\Models\Education;
 use Illuminate\Http\JsonResponse;

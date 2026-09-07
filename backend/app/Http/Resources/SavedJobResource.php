@@ -19,7 +19,7 @@ class SavedJobResource extends JsonResource
             'user_id' => $this->user_id,
             'job_post_id' => $this->job_post_id,
             'notes' => $this->notes,
-            'job' => new JobResource($this->whenLoaded('job')),
+            'job' => new JobPostResource($this->whenLoaded('job')),
             'user' => new UserResource($this->whenLoaded('user')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

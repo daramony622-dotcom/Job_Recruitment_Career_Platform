@@ -36,7 +36,7 @@ class InterviewScheduled extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $jobTitle = $this->interview->jobApplication?->jobPost?->title ?? 'Position';
+        $jobTitle = $this->interview->application?->jobPost?->title ?? 'Position';
         $scheduledAt = $this->interview->scheduled_at?->format('F j, Y, g:i a') ?? 'TBD';
         $meetingLink = $this->interview->meeting_link;
 
@@ -62,7 +62,7 @@ class InterviewScheduled extends Notification implements ShouldQueue
     {
         return [
             'interview_id' => $this->interview->id,
-            'job_title' => $this->interview->jobApplication?->jobPost?->title,
+            'job_title' => $this->interview->application?->jobPost?->title,
             'scheduled_at' => $this->interview->scheduled_at,
             'meeting_link' => $this->interview->meeting_link,
             'message' => 'Your interview has been scheduled.',

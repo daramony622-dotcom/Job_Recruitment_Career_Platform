@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\StoreJobPostRequest;
 use App\Http\Requests\Company\UpdateJobPostRequest;
 use App\Models\JobPost;
+use App\Http\Resources\SkillResource;
 use App\Services\JobPostService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,6 +48,34 @@ class JobPostController extends Controller
 
         $jobPost->load(['company', 'category', 'skills', 'applications']);
         return response()->json($jobPost);
+    }
+
+    public function skills(JobPost $jobPost): JsonResponse
+    {
+        Gate::authorize('view', $jobPost);
+
+        return response()->json([
+            'data' => SkillResource::collection($jobPost->skills()->get()),
+        ]);
+    }
+
+    public function updateSkills(Request $request, JobPost $jobPost): JsonResponse
+    {
+        Gate::authorize('update', $jobPost);
+
+        $validated = $request->validate([
+            'skills' => ['required', 'array'],
+            'skills.*.id' => ['required', 'integer', 'exists:skills,id', 'distinct'],
+            'skills.*.level' => ['nullable', 'in:beginner,intermediate,advanced,expert'],
+            'skills.*.is_required' => ['sometimes', 'boolean'],
+        ]);
+
+        $updated = $this->jobPostService->updateJobPost($jobPost, $validated);
+
+        return response()->json([
+            'message' => 'Job post skills updated successfully.',
+            'data' => SkillResource::collection($updated->skills),
+        ]);
     }
 
     public function store(StoreJobPostRequest $request): JsonResponse

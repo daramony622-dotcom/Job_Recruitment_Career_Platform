@@ -16,6 +16,7 @@ class ApplicantController extends Controller
     /**
      * View applicants for jobs posted by this company.
      */
+
     public function index(Request $request): JsonResponse
     {
         $company = $request->user()->company;

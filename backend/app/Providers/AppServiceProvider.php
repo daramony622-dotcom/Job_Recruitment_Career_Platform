@@ -10,6 +10,8 @@ use App\Policies\CompanyPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use App\Models\Application;
+use App\Models\CV;
+use App\Policies\CVPolicy;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(JobPost::class, JobPostPolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
+        Gate::policy(CV::class, CVPolicy::class);
     }
 
 }

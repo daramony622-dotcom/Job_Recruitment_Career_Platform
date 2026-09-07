@@ -25,6 +25,10 @@ Route::middleware('has.company')->group(function () {
     // Job Posts
     Route::apiResource('job-posts', JobPostController::class)
         ->parameters(['job-posts' => 'jobPost']);
+    Route::get('job-posts/{jobPost}/skills', [JobPostController::class, 'skills'])
+        ->name('job-posts.skills');
+    Route::put('job-posts/{jobPost}/skills', [JobPostController::class, 'updateSkills'])
+        ->name('job-posts.skills.update');
     Route::post('job-posts/{id}/restore', [JobPostController::class, 'restore'])
         ->name('company.job-posts.restore');
     Route::post('job-posts/{jobPost}/toggle-featured', [JobPostController::class, 'toggleFeatured'])
@@ -37,8 +41,8 @@ Route::middleware('has.company')->group(function () {
     Route::patch('applicants/{application}/reject', [ApplicantController::class, 'reject']);
     Route::patch('applicants/{application}/status', [ApplicantController::class, 'updateStatus']);
 
-    // Interviews (Company can schedule, update, cancel, delete — not destroy except by admin)
-    Route::apiResource('interviews', InterviewController::class)->except(['destroy']);
+    // Interviews (Company can create, view, update, cancel, and delete)
+    Route::apiResource('interviews', InterviewController::class);
     Route::patch('interviews/{interview}/cancel', [InterviewController::class, 'cancel'])
         ->name('company.interviews.cancel');
 

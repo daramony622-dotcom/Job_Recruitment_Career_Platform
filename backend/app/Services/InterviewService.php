@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Notifications\InterviewScheduled;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class InterviewService
 {
@@ -66,30 +67,43 @@ class InterviewService
      */
     public function scheduleInterview(array $data, User $creator): Interview
     {
-        return DB::transaction(function () use ($data, $creator) {
+        $interview = DB::transaction(function () use ($data, $creator) {
             $application = Application::with(['jobPost', 'jobSeeker'])->findOrFail($data['application_id']);
 
-            // Auto-populate required fields if missing
-            $data['job_post_id'] = $data['job_post_id'] ?? $application->job_post_id;
-            $data['applicant_id'] = $data['applicant_id'] ?? $application->user_id;
-            $data['interviewer_id'] = $data['interviewer_id'] ?? $creator->id;
+            if (! $creator->isAdmin()) {
+                $companyId = $creator->company?->id;
+
+                if (! $companyId || $application->jobPost->company_id !== $companyId) {
+                    throw ValidationException::withMessages([
+                        'application_id' => 'You can only schedule interviews for applications to your company jobs.',
+                    ]);
+                }
+            }
+
+            // These relationships are derived from the application and creator.
+            $data['job_post_id'] = $application->job_post_id;
+            $data['applicant_id'] = $application->user_id;
+            $data['interviewer_id'] = $creator->id;
             $data['status'] = $data['status'] ?? 'scheduled';
             $data['result'] = $data['result'] ?? 'pending';
 
             $interview = Interview::create($data);
 
-            // Update application status to interviewing if applicable
-            if ($application->status !== 'interviewing') {
-                $application->update(['status' => 'interviewing']);
-            }
-
-            // Notify candidate if user notification exists
-            if ($application->jobSeeker) {
-                $application->jobSeeker->notify(new InterviewScheduled($interview));
+            // Keep the application lifecycle status aligned with the scheduled interview.
+            if ($application->status !== 'interview') {
+                $application->update(['status' => 'interview']);
             }
 
             return $interview->load(['application', 'job', 'applicant', 'interviewer']);
         });
+
+        // Dispatch only after the interview is committed so queued notifications
+        // can safely serialize and reload the interview model.
+        if ($interview->applicant) {
+            $interview->applicant->notify(new InterviewScheduled($interview));
+        }
+
+        return $interview;
     }
 
     /**

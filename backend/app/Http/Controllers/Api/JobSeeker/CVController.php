@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api\JobSeeker;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreCVRequest;
+use App\Http\Requests\JobSeeker\StoreCVRequest;
 use App\Http\Requests\UpdateCVRequest;
 use App\Http\Resources\CVResource;
 use App\Models\CV;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
 
@@ -42,6 +43,7 @@ class CVController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+
     public function store(StoreCVRequest $request): CVResource
     {
         $user = $request->user();

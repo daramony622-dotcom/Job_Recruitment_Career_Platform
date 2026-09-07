@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SavedJob extends Model
 {
     protected $table = 'saved_jobs';
-
+    
     protected $fillable = [
         'user_id',
         'job_post_id',
@@ -26,6 +26,6 @@ class SavedJob extends Model
 
     public function job(): BelongsTo
     {
-        return $this->belongsTo(Job::class, 'job_post_id');
+        return $this->belongsTo(JobPost::class, 'job_post_id');
     }
 }

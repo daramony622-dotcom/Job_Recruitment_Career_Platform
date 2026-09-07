@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\JobSeeker;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,14 +24,15 @@ class StoreSavedJobRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'job_id' => [
+            'job_post_id' => [
                 'required',
                 'integer',
-                'exists:jobs,id',
-                Rule::unique('saved_jobs', 'job_id')->where(function ($query) {
+                'exists:job_posts,id',
+                Rule::unique('saved_jobs', 'job_post_id')->where(function ($query) {
                     return $query->where('user_id', $this->user()->id);
                 }),
             ],
+            'notes' => ['nullable', 'string'],
         ];
     }
 }
