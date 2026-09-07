@@ -43,11 +43,31 @@ export const adminApi = {
     return http.put(`/admin/users/${id}`, data)
   },
 
+  deleteUser(id) {
+    return http.delete(`/admin/users/${id}`)
+  },
+
   getApplications(params = {}) {
     return http.get('/admin/applications', { params })
   },
 
   getCompanies(params = {}) {
     return http.get('/admin/companies', { params })
+  },
+
+  storeCompany(data) {
+    return http.post('/admin/companies', data)
+  },
+
+  getJobCategories(params = {}) {
+    return http.get('/admin/job-categories', { params })
+  },
+
+  getSkills(params = {}) {
+    return http.get('/admin/skills', { params })
+  },
+
+  storeJobPost(data) {
+    return http.post('/admin/job-posts', data)
   },
 }

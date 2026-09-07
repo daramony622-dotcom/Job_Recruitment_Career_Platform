@@ -1,8 +1,22 @@
 <script setup>
 import { onMounted, reactive, ref, watch } from 'vue'
-import { Users, Search, RefreshCw, Eye, Pencil, Trash2 } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import {
+  Users,
+  Search,
+  RefreshCw,
+  Eye,
+  Pencil,
+  Trash2,
+  X,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-vue-next'
 import { adminApi } from '../api'
 import StatusBadge from '../components/StatusBadge.vue'
+
+const router = useRouter()
 
 const loading = ref(false)
 const error = ref('')
@@ -56,19 +70,72 @@ function statusFor(user) {
   return user.is_active ? 'active' : 'inactive'
 }
 
+// ---- View ----
 function onView(c) {
-  alert(`View user: ${c.name}`)
+  router.push(`/candidates/${c.id}`)
 }
 
-function onEdit(c) {
-  alert(`Edit user: ${c.name}`)
+// ---- Edit modal ----
+const showEditModal = ref(false)
+const editingCandidate = ref(null)
+const editSubmitting = ref(false)
+const editError = ref('')
+const editSuccess = ref('')
+
+const editForm = reactive({
+  name: '',
+  email: '',
+  is_active: true,
+})
+
+function openEdit(c) {
+  editingCandidate.value = c
+  editForm.name = c.name || ''
+  editForm.email = c.email || ''
+  editForm.is_active = c.is_active !== false
+  editError.value = ''
+  editSuccess.value = ''
+  showEditModal.value = true
 }
 
-async function onDelete(c) {
-  if (!confirm(`Delete user "${c.name}"?`)) return
+function closeEditModal() {
+  if (editSubmitting.value) return
+  showEditModal.value = false
+  editingCandidate.value = null
+}
+
+async function submitEdit() {
+  editSubmitting.value = true
+  editError.value = ''
+  editSuccess.value = ''
   try {
-    await adminApi.updateCandidate(c.id, { is_active: false })
-    fetchCandidates()
+    await adminApi.updateCandidate(editingCandidate.value.id, {
+      name: editForm.name,
+      email: editForm.email,
+      is_active: editForm.is_active,
+    })
+    editSuccess.value = 'Candidate updated successfully.'
+    await fetchCandidates()
+    setTimeout(closeEditModal, 1000)
+  } catch (e) {
+    const err = e.response?.data
+    if (err && err.errors) {
+      editError.value = Object.values(err.errors).flat().join(' ')
+    } else {
+      editError.value = err?.message || 'Update failed.'
+    }
+  } finally {
+    editSubmitting.value = false
+  }
+}
+
+// ---- Delete ----
+async function onDelete(c) {
+  if (!confirm(`Delete candidate "${c.name}"? This action cannot be undone.`)) return
+  try {
+    await adminApi.deleteUser(c.id)
+    error.value = ''
+    await fetchCandidates()
   } catch (e) {
     error.value = e.response?.data?.message || 'Delete failed.'
   }
@@ -174,7 +241,7 @@ onMounted(fetchCandidates)
                   </button>
                   <button
                     class="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
-                    title="Deactivate"
+                    title="Delete"
                     @click="onDelete(c)"
                   >
                     <Trash2 class="w-4 h-4" />
@@ -207,6 +274,92 @@ onMounted(fetchCandidates)
             @click="goToPage(pagination.current_page + 1)"
           >
             Next
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Edit Candidate Modal ===== -->
+    <div
+      v-if="showEditModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        @click="closeEditModal"
+      ></div>
+
+      <div class="relative bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-800">
+          <div>
+            <h3 class="text-lg font-bold text-slate-50 flex items-center gap-2">
+              <Pencil class="w-5 h-5 text-amber-400" />
+              Edit Candidate
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Update the candidate's details.</p>
+          </div>
+          <button
+            @click="closeEditModal"
+            class="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="px-6 py-5 space-y-4">
+          <p v-if="editError" class="flex items-start gap-2 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+            <AlertCircle class="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{{ editError }}</span>
+          </p>
+          <p v-if="editSuccess" class="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3">
+            <CheckCircle2 class="w-4 h-4 shrink-0" />
+            <span>{{ editSuccess }}</span>
+          </p>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1.5">Name</label>
+            <input
+              v-model="editForm.name"
+              type="text"
+              class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+            <input
+              v-model="editForm.email"
+              type="email"
+              class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <label class="flex items-center gap-2.5 text-sm text-slate-300 cursor-pointer">
+            <input
+              v-model="editForm.is_active"
+              type="checkbox"
+              class="w-4 h-4 rounded accent-blue-600"
+            />
+            Active account
+          </label>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-800">
+          <button
+            @click="closeEditModal"
+            class="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
+            :disabled="editSubmitting"
+          >
+            Cancel
+          </button>
+          <button
+            @click="submitEdit"
+            :disabled="editSubmitting"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          >
+            <Loader2 v-if="editSubmitting" class="w-4 h-4 animate-spin" />
+            <CheckCircle2 v-else class="w-4 h-4" />
+            {{ editSubmitting ? 'Saving...' : 'Save Changes' }}
           </button>
         </div>
       </div>

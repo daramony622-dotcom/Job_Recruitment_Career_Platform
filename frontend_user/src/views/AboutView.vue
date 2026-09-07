@@ -2,21 +2,83 @@
 import Navbar from '../components/layout/Navbar.vue'
 import Footer from '../components/layout/Footer.vue'
 import { 
-  ShieldCheck, Zap, Globe, Heart, Briefcase, Users, Award, Clock 
+  ShieldCheck, Zap, Globe, Heart, Briefcase, Users, Award, Clock,
+  Server, Code, Terminal, Cpu, Database, Layout, Sparkles, Mail,
+  Github, Linkedin, Send, CheckCircle2, MessageSquare, ArrowRight,
+  Search, FileText, Bell, Building2
 } from 'lucide-vue-next'
 
+// ─── Team Members (1st Backend, 2nd Backend, 3rd Frontend) ─────────────────────
+const team = [
+  {
+    name: 'Lin Dalan',
+    role: 'Lead Backend Engineer',
+    role_type: 'backend',
+    avatar: '\Dalan.jpg',
+    bio: 'Responsible for core backend architecture, Laravel RESTful API design, database migrations, and authentication security.',
+    tech_stack: ['Laravel 11', 'PHP 8.3', 'MySQL', 'JWT Auth', 'REST API'],
+    email: 'lindalan495@gmail.com',
+    github: 'https://github.com/LinDalan-5706',
+    linkedin: 'https://linkedin.com'
+  },
+  {
+    name: 'Mao Seikmeng',
+    role: 'Backend & Systems Engineer',
+    role_type: 'backend',
+    avatar: '/Seikmeng.jpg',
+    bio: 'Focuses on database optimization, Redis queue workers, notification delivery pipelines, and server-side performance.',
+    tech_stack: ['Laravel', 'PostgreSQL', 'Redis', 'WebSockets', 'Docker'],
+    email: 'vireak.backend@jobsearch.com.kh',
+    github: 'https://github.com',
+    linkedin: 'https://linkedin.com'
+  },
+  {
+    name: 'Yon Mouy',
+    role: 'Lead Frontend Engineer & UI/UX Specialist',
+    role_type: 'frontend',
+    avatar: '/Mouy.jpg',
+    bio: 'Crafts the user interface and user experience, building reactive Vue 3 components, Tailwind dark mode system, and responsive pages.',
+    tech_stack: ['Vue 3', 'Composition API', 'Tailwind CSS', 'Vite', 'JavaScript'],
+    email: 'yonmouy1@gmail.com',
+    github: 'https://github.com/yonmouy1-create',
+    linkedin: 'https://linkedin.com'
+  }
+]
+
+// ─── Platform Website Functions ───────────────────────────────────────────────
+const platformFunctions = [
+  {
+    title: 'Smart Job Search & Matching',
+    desc: 'Advanced multi-criteria filtering by salary ranges, work mode (onsite/remote/hybrid), category, and city location.',
+    icon: Search,
+    color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400'
+  },
+  {
+    title: 'Verified Employer Portal',
+    desc: 'Transparent company profiles, employee reviews, verified business badges, and direct recruitment channels.',
+    icon: Building2,
+    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-400'
+  },
+  {
+    title: 'Real-Time Notification System',
+    desc: 'Instant updates on job applications, recruiter views, and interview invites delivered via in-app alerts, email, and SMS.',
+    icon: Bell,
+    color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-400'
+  },
+  {
+    title: 'Candidate CV & Resume Builder',
+    desc: 'One-click application submission with instant PDF resume uploads, expected salary specs, and availability indicators.',
+    icon: FileText,
+    color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400'
+  }
+]
+
+// ─── Platform Stats ───────────────────────────────────────────────────────────
 const stats = [
   { label: 'Active Job Posts', value: '12,400+', icon: Briefcase },
   { label: 'Registered Companies', value: '3,200+', icon: Users },
   { label: 'Monthly Visitors', value: '890k+', icon: Globe },
   { label: 'Successful Placements', value: '145,000+', icon: Award }
-]
-
-const values = [
-  { title: 'Transparency First', desc: 'Clear salary ranges, genuine company reviews, and upfront job requirements for every listing.', icon: ShieldCheck },
-  { title: 'Fast & Seamless', desc: 'Instant 1-click applications with real-time application status tracking.', icon: Zap },
-  { title: 'Global Reach', desc: 'Connecting Cambodian talent with local and international employers across 42 countries.', icon: Globe },
-  { title: 'People Focused', desc: 'We champion candidates at every step — career advice, CV reviews, and interview prep resources.', icon: Heart }
 ]
 </script>
 
@@ -26,22 +88,40 @@ const values = [
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
       
-      <!-- Hero Section -->
-      <div class="text-center max-w-3xl mx-auto space-y-4">
-        <span class="px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-100 dark:border-blue-900/50">
-          About Job Search
-        </span>
-        <h1 class="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-          Empowering Careers, <br />
-          <span class="text-blue-600 dark:text-blue-400">Connecting Great Teams.</span>
-        </h1>
-        <p class="text-base text-slate-600 dark:text-slate-300 leading-relaxed">
-          Job Search is Cambodia's premier career recruitment platform. We empower candidates to discover meaningful work while helping innovative organizations hire top talent seamlessly.
-        </p>
-      </div>
+      <!-- ─── 1. High-End Hero Banner ────────────────────────────────────── -->
+      <section class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-900 text-white p-8 sm:p-14 shadow-xl">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.15),transparent_50%)] pointer-events-none"></div>
 
-      <!-- Live Stats Banner -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="relative z-10 max-w-3xl space-y-5">
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-blue-100">
+            <Sparkles class="w-3.5 h-3.5 text-amber-300" />
+            <span>About Job Search Career Platform</span>
+          </div>
+
+          <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight text-white">
+            Empowering Careers, <br />
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">Connecting Top Talent.</span>
+          </h1>
+
+          <p class="text-sm sm:text-base text-blue-100 leading-relaxed font-medium">
+            Job Search is Cambodia’s premier career recruitment ecosystem. Designed and engineered by our dedicated core development team, we connect passionate job seekers with leading employers across Southeast Asia.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-3 pt-2">
+            <router-link to="/jobs" class="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 hover:bg-blue-50 rounded-2xl text-xs font-bold transition shadow-md active:scale-95">
+              <span>Browse 12,400+ Jobs</span>
+              <ArrowRight class="w-4 h-4" />
+            </router-link>
+            <router-link to="/contact" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-500/30 hover:bg-blue-500/40 border border-white/20 text-white rounded-2xl text-xs font-bold transition active:scale-95">
+              <Mail class="w-4 h-4" />
+              <span>Contact Support</span>
+            </router-link>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 2. Live Platform Metrics ────────────────────────────────────── -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div 
           v-for="st in stats" 
           :key="st.label"
@@ -53,49 +133,127 @@ const values = [
           <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">{{ st.value }}</div>
           <div class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ st.label }}</div>
         </div>
-      </div>
+      </section>
 
-      <!-- Core Mission Section -->
-      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 sm:p-12 shadow-sm grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        <div class="space-y-4">
-          <div class="inline-flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-            <Clock class="w-4 h-4" />
-            <span>Our Mission</span>
-          </div>
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Building Cambodia's <span class="text-blue-600 dark:text-blue-400">Largest</span> Career Network
-          </h2>
-          <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            We believe everyone deserves access to meaningful work opportunities. Our platform bridges the gap between talented individuals and forward-thinking organizations across Southeast Asia.
-          </p>
-        </div>
-        <div class="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 rounded-2xl p-8 text-white text-center space-y-3 shadow-lg">
-          <h3 class="text-3xl font-extrabold">890K+</h3>
-          <p class="text-xs text-blue-200 font-semibold">Registered candidates trust Job Search with their career growth.</p>
-        </div>
-      </div>
-
-      <!-- Core Values Grid -->
-      <div class="space-y-8">
+      <!-- ─── 3. Core Website Functions ──────────────────────────────────── -->
+      <section class="space-y-8">
         <div class="text-center max-w-2xl mx-auto space-y-2">
-          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Our Driving Principles</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400">The core values guiding everything we build at Job Search.</p>
+          <span class="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
+            Platform Capability
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Core Website Functions</h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Essential features driving seamless career connections on Job Search.</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div 
-            v-for="val in values" 
-            :key="val.title"
-            class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-3xl space-y-3 shadow-xs hover:shadow-md transition"
+            v-for="fn in platformFunctions" 
+            :key="fn.title"
+            class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-3xl space-y-4 shadow-xs hover:shadow-md transition duration-200"
           >
-            <div class="p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-2xl w-12 h-12 flex items-center justify-center">
-              <component :is="val.icon" class="w-6 h-6" />
+            <div :class="fn.color" class="p-3.5 rounded-2xl w-12 h-12 flex items-center justify-center shrink-0">
+              <component :is="fn.icon" class="w-6 h-6" />
             </div>
-            <h3 class="font-bold text-slate-900 dark:text-white text-base">{{ val.title }}</h3>
-            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{{ val.desc }}</p>
+            <h3 class="font-extrabold text-slate-900 dark:text-white text-base">{{ fn.title }}</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{{ fn.desc }}</p>
           </div>
         </div>
-      </div>
+      </section>
+
+      <!-- ─── 4. Development Team Profiles (3 People) ───────────────────── -->
+      <section class="space-y-8">
+        <div class="text-center max-w-2xl mx-auto space-y-2">
+          <span class="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
+            Meet The Engineers
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Core Engineering Team</h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">The developers behind the architecture, databases, APIs, and frontend user interface.</p>
+        </div>
+
+        <!-- 3 Team Member Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div 
+            v-for="(member, idx) in team" 
+            :key="member.name"
+            class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xs hover:shadow-lg transition duration-300 flex flex-col justify-between relative group"
+          >
+
+            <div class="space-y-4">
+              <!-- Avatar -->
+              <div class="relative w-24 h-24 mx-auto">
+                <img 
+                  :src="member.avatar" 
+                  :alt="member.name" 
+                  class="w-24 h-24 rounded-3xl object-cover border-4 border-slate-100 dark:border-slate-800 shadow-md group-hover:scale-105 transition transform duration-300"
+                />
+              </div>
+
+              <!-- Name & Title -->
+              <div class="text-center space-y-1">
+                <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">{{ member.name }}</h3>
+                <p class="text-xs font-bold text-blue-600 dark:text-blue-400">{{ member.role }}</p>
+              </div>
+
+              <!-- Bio -->
+              <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-center">
+                {{ member.bio }}
+              </p>
+
+              <!-- Tech Stack Badges -->
+              <div class="flex flex-wrap justify-center gap-1.5 pt-2">
+                <span 
+                  v-for="stk in member.tech_stack" 
+                  :key="stk"
+                  class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold"
+                >
+                  {{ stk }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Social Links / Contact -->
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-3">
+              <a 
+                :href="`mailto:${member.email}`" 
+                class="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-600 dark:text-slate-300 rounded-xl transition cursor-pointer" 
+                title="Email Engineer"
+              >
+                <Mail class="w-4 h-4" />
+              </a>
+              <a 
+                :href="member.github" 
+                target="_blank" 
+                class="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-900 hover:text-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition cursor-pointer" 
+                title="GitHub Profile"
+              >
+                <Github class="w-4 h-4" />
+              </a>
+              <a 
+                :href="member.linkedin" 
+                target="_blank" 
+                class="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-blue-700 hover:text-white dark:hover:bg-blue-700 text-slate-600 dark:text-slate-300 rounded-xl transition cursor-pointer" 
+                title="LinkedIn Profile"
+              >
+                <Linkedin class="w-4 h-4" />
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 5. Contact & Support CTA Banner ────────────────────────────── -->
+      <section class="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-800 rounded-3xl p-8 sm:p-12 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="space-y-2 max-w-xl">
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Have Questions or Need Assistance?</h2>
+          <p class="text-xs sm:text-sm text-blue-100">Our team is here to assist candidates and hiring employers 24/7.</p>
+        </div>
+
+        <router-link to="/contact" class="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-blue-600 hover:bg-blue-50 rounded-2xl text-xs font-bold transition shadow-md shrink-0 active:scale-95">
+          <Send class="w-4 h-4" />
+          <span>Contact Our Team</span>
+        </router-link>
+      </section>
 
     </main>
 

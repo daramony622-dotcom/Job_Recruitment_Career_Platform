@@ -7,8 +7,8 @@ const salary = defineModel('salary', { type: String, default: '' })
 const time = defineModel('time', { type: String, default: '' })
 
 defineProps({
-  totalJobs: { type: Number, required: true },
-  hasActiveFilters: { type: Boolean, required: true }
+  totalJobs: { type: Number, default: 0 },
+  hasActiveFilters: { type: Boolean, default: false }
 })
 
 const locations = [

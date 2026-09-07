@@ -87,16 +87,6 @@ const handleLogin = async () => {
           </div>
         </div>
       </div>
-
-      <!-- Footer Testimonial Quote -->
-      <div class="relative z-10 pt-6 border-t border-white/15 flex items-center gap-4">
-        <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">SK</div>
-        <div>
-          <p class="text-xs font-bold text-white">Sokha Kim</p>
-          <p class="text-[11px] text-blue-200">Senior Developer at TechMatrix Global</p>
-        </div>
-      </div>
-
     </div>
 
     <!-- RIGHT COLUMN: Form Panel -->
