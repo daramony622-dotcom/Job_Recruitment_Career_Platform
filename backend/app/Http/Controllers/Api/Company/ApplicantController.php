@@ -35,8 +35,6 @@ class ApplicantController extends Controller
         return response()->json([
             'status' => 'success',
             'data'   => $applications,
-            'Horn'=> "That's La peacee" 
-
         ]);
     }
 

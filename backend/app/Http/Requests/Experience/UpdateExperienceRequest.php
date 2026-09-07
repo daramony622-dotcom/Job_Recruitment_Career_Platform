@@ -22,6 +22,7 @@ class UpdateExperienceRequest extends FormRequest
      */
     public function rules(): array
     {
+
         return [
             'job_title' => ['sometimes', 'required', 'string', 'max:255'],
             'company_name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -32,4 +33,5 @@ class UpdateExperienceRequest extends FormRequest
             'description' => ['nullable', 'string'],
         ];
     }
+
 }

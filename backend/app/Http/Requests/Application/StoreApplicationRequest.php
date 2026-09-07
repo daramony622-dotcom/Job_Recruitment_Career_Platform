@@ -8,7 +8,7 @@ class StoreApplicationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isUser() || $this->user()?->role === 'user';
+        return $this->user()?->isUser() ?? false;
     }
 
     public function rules(): array

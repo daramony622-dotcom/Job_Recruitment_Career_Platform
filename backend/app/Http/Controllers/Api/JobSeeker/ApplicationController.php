@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\JobSeeker;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Application\StoreApplicationRequest;
+use App\Http\Requests\JobSeeker\StoreApplicationRequest;
 use App\Models\Application;
 use App\Services\ApplicationService;
 use Illuminate\Http\JsonResponse;
