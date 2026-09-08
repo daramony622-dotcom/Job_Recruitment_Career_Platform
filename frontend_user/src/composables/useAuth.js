@@ -77,7 +77,7 @@ const fetchProfileAvatar = async () => {
     profileAvatar.value = ''
     return ''
   }
-
+  
   try {
     const profile = await request('/user/profile')
     profileAvatar.value = resolveAssetUrl(profile?.avatar)

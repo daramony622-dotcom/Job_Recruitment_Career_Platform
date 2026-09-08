@@ -51,6 +51,21 @@ const routes = [
     name: 'CompanyDetail',
     component: () => import('../views/CompanyDetailView.vue'),
   },
+  {
+    path: '/admin-resources/:resource',
+    name: 'AdminResources',
+    component: () => import('../views/AdminResourcesView.vue'),
+  },
+  {
+    path: '/security',
+    name: 'Security',
+    component: () => import('../views/SecurityView.vue'),
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/SettingsView.vue'),
+  },
 ]
 
 const router = createRouter({
@@ -58,7 +73,21 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
+import { useAuth } from '../stores/auth'
+
+router.beforeEach(async (to) => {
+  const auth = useAuth()
+  const urlToken = to.query.token
+
+  if (urlToken) {
+    const user = await auth.loginWithToken(urlToken)
+    if (user && (user.role === 'admin' || user.is_admin)) {
+      const cleanQuery = { ...to.query }
+      delete cleanQuery.token
+      return { path: '/dashboard', query: cleanQuery }
+    }
+  }
+
   const token = localStorage.getItem('admin_token')
   if (!to.meta.public && !token) {
     return { name: 'Login' }

@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { initTheme } from './composables/useTheme'
 import { useAuth } from './composables/useAuth'
+import { useLanguage } from './composables/useLanguage'
 
 const { fetchCurrentUser, fetchProfileAvatar } = useAuth()
 

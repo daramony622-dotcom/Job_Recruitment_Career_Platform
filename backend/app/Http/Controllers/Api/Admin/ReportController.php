@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use App\Models\Company;
 use App\Models\JobPost;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -43,6 +44,7 @@ class ReportController extends Controller
                     'active_candidates' => (clone $candidateQuery)
                         ->whereNotNull('email_verified_at')
                         ->count(),
+                    'total_companies' => Company::query()->count(),
                     'total_applications' => Application::query()->count(),
                 ],
                 'job_posts_by_status' => $jobStatusCounts,

@@ -7,7 +7,11 @@ import {
   Briefcase,
   ArrowRight,
   BadgeCheck,
+  Pencil,
+  ShieldCheck,
+  Trash2,
 } from 'lucide-vue-next'
+import { gradientSeed } from '../data/companies'
 
 const props = defineProps({
   company: {
@@ -15,6 +19,14 @@ const props = defineProps({
     required: true,
   },
 })
+
+const emit = defineEmits(['edit', 'delete', 'status'])
+
+const coverBackground = () =>
+  props.company.cover_image ? '' : gradientSeed[(Number(props.company.id) || 0) % gradientSeed.length]
+
+const logoBackground = () =>
+  props.company.logo ? '' : gradientSeed[(Number(props.company.id) || 0) % gradientSeed.length]
 </script>
 
 <template>
@@ -32,7 +44,7 @@ const props = defineProps({
       <div
         v-else
         class="w-full h-full"
-        :style="{ background: company.coverGradient }"
+        :style="{ background: coverBackground() }"
       ></div>
 
       <!-- VERIFIED EMPLOYER badge (top right) -->
@@ -59,7 +71,7 @@ const props = defineProps({
         <div
           v-else
           class="w-full h-full flex items-center justify-center text-lg font-black text-white"
-          :style="{ background: company.logoGradient }"
+          :style="{ background: logoBackground() }"
         >
           {{ company.name.charAt(0) }}
         </div>
@@ -79,22 +91,22 @@ const props = defineProps({
 
       <!-- Description snippet -->
       <p class="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
-        {{ company.description }}
+        {{ company.description || 'No company description added yet.' }}
       </p>
 
       <!-- Two-column info grid -->
       <div class="mt-4 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm text-left">
         <p class="flex items-center gap-2 text-slate-700 dark:text-slate-300 min-w-0">
           <MapPin class="w-4 h-4 text-slate-500 shrink-0" />
-          <span class="truncate">{{ company.city }}, {{ company.country }}</span>
+          <span class="truncate">{{ company.city || '—' }}{{ company.city && company.country ? ', ' : '' }}{{ company.country || '' }}</span>
         </p>
         <p class="flex items-center gap-2 text-slate-700 dark:text-slate-300 min-w-0">
           <Users class="w-4 h-4 text-slate-500 shrink-0" />
-          <span class="truncate">{{ company.company_size }}</span>
+          <span class="truncate">{{ company.company_size || '—' }}</span>
         </p>
         <p class="flex items-center gap-2 text-slate-700 dark:text-slate-300 min-w-0">
           <CalendarDays class="w-4 h-4 text-slate-500 shrink-0" />
-          <span class="truncate">Founded {{ company.founded_year }}</span>
+          <span class="truncate">Founded {{ company.founded_year || '—' }}</span>
         </p>
         <a
           v-if="company.website"
@@ -117,7 +129,7 @@ const props = defineProps({
     <div class="mt-auto px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
       <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
         <Briefcase class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-        {{ company.active_openings }} Openings
+        {{ company.jobs?.length || 0 }} Openings
       </span>
       <router-link
         :to="`/companies/${company.id}`"
@@ -126,6 +138,11 @@ const props = defineProps({
         <span>View Company Profile</span>
         <ArrowRight class="w-4 h-4 transition-transform group-hover/link:translate-x-0.5" />
       </router-link>
+    </div>
+    <div class="px-5 pb-4 flex items-center justify-end gap-1.5">
+      <button class="p-2 rounded-lg text-amber-600 hover:bg-amber-500/10" title="Edit company" @click="emit('edit', company)"><Pencil class="w-4 h-4" /></button>
+      <button class="p-2 rounded-lg text-blue-600 hover:bg-blue-500/10" title="Approve or suspend company" @click="emit('status', company)"><ShieldCheck class="w-4 h-4" /></button>
+      <button class="p-2 rounded-lg text-rose-600 hover:bg-rose-500/10" title="Delete company" @click="emit('delete', company)"><Trash2 class="w-4 h-4" /></button>
     </div>
   </article>
 </template>

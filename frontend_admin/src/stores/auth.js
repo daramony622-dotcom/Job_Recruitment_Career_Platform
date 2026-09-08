@@ -14,6 +14,19 @@ export function useAuth() {
     return data.user
   }
 
+  async function loginWithToken(rawToken) {
+    token.value = rawToken
+    localStorage.setItem('admin_token', rawToken)
+    try {
+      const { data } = await adminApi.getMe()
+      user.value = data
+      localStorage.setItem('admin_user', JSON.stringify(data))
+      return data
+    } catch {
+      return null
+    }
+  }
+
   function logout() {
     token.value = ''
     user.value = null
@@ -26,6 +39,7 @@ export function useAuth() {
     user,
     isAuthenticated: () => Boolean(token.value),
     login,
+    loginWithToken,
     logout,
   }
 }

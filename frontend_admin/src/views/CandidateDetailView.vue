@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-vue-next'
 import { adminApi } from '../api'
 import StatusBadge from '../components/StatusBadge.vue'
+import { profileImage } from '../utils/media'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +23,7 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref('')
 const candidate = ref(null)
+const candidateAvatar = computed(() => profileImage(candidate.value))
 
 async function fetchCandidate() {
   loading.value = true
@@ -62,7 +64,8 @@ onMounted(fetchCandidate)
           <div
             class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center text-3xl sm:text-4xl font-black text-white overflow-hidden shrink-0 shadow-lg"
           >
-            {{ (candidate.name || '?').charAt(0).toUpperCase() }}
+            <img v-if="candidateAvatar" :src="candidateAvatar" :alt="candidate.name || 'Profile'" class="w-full h-full object-cover" />
+            <template v-else>{{ (candidate.name || '?').charAt(0).toUpperCase() }}</template>
           </div>
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2.5">

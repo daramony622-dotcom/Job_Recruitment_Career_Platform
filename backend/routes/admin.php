@@ -8,7 +8,9 @@ use App\Http\Controllers\Api\Admin\JobBatchController;
 use App\Http\Controllers\Api\Admin\JobCategoryController;
 use App\Http\Controllers\Api\Admin\JobController;
 use App\Http\Controllers\Api\Admin\JobPostController;
+use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\ReportController;
+use App\Http\Controllers\Api\Admin\SecurityController;
 use App\Http\Controllers\Api\Admin\SettingController;
 use App\Http\Controllers\Api\Admin\SkillController;
 use App\Http\Controllers\Api\Admin\UserController;
@@ -24,11 +26,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('admin.')->group(function () {
     // Manage Users & Companies
-    Route::apiResource('users', UserController::class);
+    Route::apiResource('users', UserController::class)->except(['store']);
     Route::apiResource('companies', CompanyController::class);
     Route::match(['put', 'patch'], 'companies/{company}/status', [CompanyController::class, 'updateStatus'])->name('companies.updateStatus');
 
     // Manage Job Categories, Posts, & Skills
+    Route::patch('job-categories/{jobCategory}/toggle-active', [JobCategoryController::class, 'toggleActive'])
+        ->name('job-categories.toggle-active');
+    Route::post('job-categories/reorder', [JobCategoryController::class, 'reorder'])
+        ->name('job-categories.reorder');
+    Route::get('job-categories/tree', [JobCategoryController::class, 'tree'])
+        ->name('job-categories.tree');
     Route::apiResource('job-categories', JobCategoryController::class)
         ->parameters(['job-categories' => 'jobCategory']);
     Route::apiResource('job-posts', JobPostController::class)
@@ -55,6 +63,17 @@ Route::name('admin.')->group(function () {
     Route::apiResource('interviews', InterviewController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::patch('interviews/{interview}/cancel', [InterviewController::class, 'cancel'])
         ->name('interviews.cancel');
+
+    // Notifications
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Security & Audit
+    Route::get('security/overview', [SecurityController::class, 'overview'])->name('security.overview');
+    Route::get('security/logs', [SecurityController::class, 'auditLogs'])->name('security.logs');
+    Route::post('security/revoke-other-tokens', [SecurityController::class, 'revokeOtherTokens'])->name('security.revokeOtherTokens');
 
     // Reports & Settings
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');

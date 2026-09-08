@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\RoleMiddleware;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(function (Request $request) {
+            return $request->is('api/*') ? null : route('login');
+        });
+
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'verified.otp' => AuthMiddleware::class,
@@ -26,4 +31,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (AuthenticationException $exception, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+        });
     })->create();

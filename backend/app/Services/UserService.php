@@ -16,7 +16,11 @@ class UserService
         $query = User::with(['profile', 'skills']);
 
         if (!empty($filters['role'])) {
-            $query->where('role', $filters['role']);
+            if ($filters['role'] === 'user' || $filters['role'] === 'job_seeker') {
+                $query->whereIn('role', ['user', 'job_seeker']);
+            } else {
+                $query->where('role', $filters['role']);
+            }
         }
 
         if (!empty($filters['search'])) {

@@ -23,87 +23,19 @@ const recentApplications = ref([])
 const jobSummary = ref([])
 const applicationByStatus = ref([])
 
-function countBy(items, key) {
-  const map = {}
-  for (const item of items) {
-    const val = item[key] || 'unknown'
-    map[val] = (map[val] || 0) + 1
-  }
-  return map
-}
-
 async function fetchReports() {
   loading.value = true
   error.value = ''
   try {
-    const [jobsRes, usersRes, applicationsRes] = await Promise.all([
-      adminApi.getJobPosts({ per_page: 100 }),
-      adminApi.getCandidates({ role: 'user', per_page: 100 }),
-      adminApi.getApplications({ per_page: 100 }),
-    ])
-
-    const jobPager = jobsRes.data
-    const jobsData = jobPager.data || []
-
-    const userPager = usersRes.data?.data || usersRes.data
-    const candidatesData = userPager.data || []
-
-    const appPager = applicationsRes.data?.data || applicationsRes.data
-    const applicationsData = appPager.data || []
-
-    const statusCounts = countBy(jobsData, 'status')
-    const appStatusCounts = countBy(applicationsData, 'status')
-
-    summary.value = {
-      total_jobs: jobPager.total || jobsData.length,
-      published_jobs: statusCounts.published || 0,
-      draft_jobs: statusCounts.draft || 0,
-      closed_jobs: (statusCounts.closed || 0) + (statusCounts.suspended || 0),
-      total_candidates: userPager.total || candidatesData.length,
-      active_candidates: candidatesData.filter((c) => c.is_active).length,
-      total_applications: appPager.total || applicationsData.length,
-    }
-
-    jobSummary.value = Object.entries(statusCounts).map(([status, count]) => ({ status, count }))
-    applicationByStatus.value = Object.entries(appStatusCounts).map(([status, count]) => ({ status, count }))
-
-    recentJobs.value = jobsData.slice(0, 5)
-    recentApplications.value = applicationsData.slice(0, 5)
+    const response = await adminApi.getReports()
+    const data = response.data?.data || {}
+    summary.value = { ...summary.value, ...(data.summary || {}) }
+    jobSummary.value = Object.entries(data.job_posts_by_status || {}).map(([status, count]) => ({ status, count }))
+    applicationByStatus.value = Object.entries(data.applications_by_status || {}).map(([status, count]) => ({ status, count }))
+    recentJobs.value = data.recent_jobs || []
+    recentApplications.value = data.recent_applications || []
   } catch (e) {
-    error.value = e.response?.data?.message || 'Failed to load reports from server. Using mock data for preview.'
-    
-    // Fallback ទិន្នន័យគំរូ បើសិនជា API ភ្ជាប់មិនទាន់បាន ដើម្បីជួយឱ្យ UI បង្ហាញចេញមកស្អាត
-    summary.value = {
-      total_jobs: 15,
-      published_jobs: 10,
-      draft_jobs: 3,
-      closed_jobs: 2,
-      total_candidates: 32,
-      active_candidates: 28,
-      total_applications: 45,
-    }
-
-    jobSummary.value = [
-      { status: 'published', count: 10 },
-      { status: 'draft', count: 3 },
-      { status: 'closed', count: 2 },
-    ]
-
-    applicationByStatus.value = [
-      { status: 'pending', count: 20 },
-      { status: 'reviewed', count: 15 },
-      { status: 'accepted', count: 10 },
-    ]
-
-    recentJobs.value = [
-      { id: 1, title: 'Senior Vue.js Developer', company: { name: 'Tech Solutions' }, city: 'Phnom Penh', status: 'published' },
-      { id: 2, title: 'Backend Laravel Engineer', company: { name: 'DevCorp' }, city: 'Siem Reap', status: 'published' },
-    ]
-
-    recentApplications.value = [
-      { id: 1, jobSeeker: { name: 'Sophea Chan' }, jobPost: { title: 'Senior Vue.js Developer' }, status: 'pending' },
-      { id: 2, jobSeeker: { name: 'Dara Vicheka' }, jobPost: { title: 'Backend Laravel Engineer' }, status: 'reviewed' },
-    ]
+    error.value = e.response?.data?.message || 'Failed to load reports from server.'
   } finally {
     loading.value = false
   }

@@ -47,7 +47,7 @@ class JobCategoryController extends Controller
     public function show(JobCategory $jobCategory): JsonResponse
     {
         return response()->json([
-            'data' => $jobCategory->load(['parent', 'children']),
+            'data' => $jobCategory->load(['parent', 'children.jobs.skills', 'jobs.skills']),
         ]);
     }
 

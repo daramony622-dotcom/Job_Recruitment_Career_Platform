@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import {
   Search,
   Building2,
@@ -10,31 +10,85 @@ import {
   AlertCircle,
 } from 'lucide-vue-next'
 import CompanyCard from '../components/CompanyCard.vue'
-import { sampleCompanies, statusStyles } from '../data/companies'
 import { adminApi } from '../api'
 
 const query = ref('')
-const statusFilter = ref('All')
+const statusFilter = ref('all')
 const industryFilter = ref('All')
 
-const industries = computed(() =>
-  ['All', ...new Set(sampleCompanies.map((c) => c.industry))],
-)
+const companies = ref([])
+const loading = ref(false)
+const error = ref('')
+const pagination = reactive({ current_page: 1, last_page: 1, total: 0, per_page: 12 })
 
-const statuses = ['All', ...Object.keys(statusStyles)]
+const statusOptions = ['all', 'pending', 'approved', 'rejected', 'suspended']
+
+const industries = computed(() => {
+  const items = companies.value.map((company) => company.industry).filter(Boolean)
+  return ['All', ...new Set(items)]
+})
 
 const filteredCompanies = computed(() => {
-  return sampleCompanies.filter((c) => {
+  const list = companies.value || []
+
+  return list.filter((company) => {
+    const q = query.value.trim().toLowerCase()
     const matchesQuery =
-      query.value.trim() === '' ||
-      c.name.toLowerCase().includes(query.value.toLowerCase()) ||
-      c.industry.toLowerCase().includes(query.value.toLowerCase()) ||
-      c.city.toLowerCase().includes(query.value.toLowerCase())
-    const matchesStatus = statusFilter.value === 'All' || c.status === statusFilter.value
-    const matchesIndustry = industryFilter.value === 'All' || c.industry === industryFilter.value
+      q === '' ||
+      (company.name || '').toLowerCase().includes(q) ||
+      (company.industry || '').toLowerCase().includes(q) ||
+      (company.city || '').toLowerCase().includes(q)
+
+    const matchesStatus =
+      statusFilter.value === 'all' || (company.status || '').toLowerCase() === statusFilter.value
+
+    const matchesIndustry =
+      industryFilter.value === 'All' || company.industry === industryFilter.value
+
     return matchesQuery && matchesStatus && matchesIndustry
   })
 })
+
+async function fetchCompanies() {
+  loading.value = true
+  error.value = ''
+
+  try {
+    const params = {
+      per_page: pagination.per_page,
+      page: pagination.current_page,
+      search: query.value.trim() || undefined,
+      status: statusFilter.value === 'all' ? undefined : statusFilter.value,
+    }
+
+    const { data } = await adminApi.getCompanies(params)
+    const pager = data.data || data
+    companies.value = pager.data || []
+
+    Object.assign(pagination, {
+      current_page: pager.current_page || 1,
+      last_page: pager.last_page || 1,
+      total: pager.total || 0,
+      per_page: pager.per_page || 12,
+    })
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Failed to load companies.'
+    companies.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+watch([query, statusFilter], () => {
+  pagination.current_page = 1
+  fetchCompanies()
+})
+
+function goToPage(page) {
+  if (page < 1 || page > pagination.last_page) return
+  pagination.current_page = page
+  fetchCompanies()
+}
 
 function onView(company) {
   console.log('View profile:', company.name)
@@ -42,6 +96,7 @@ function onView(company) {
 
 // ---- Add Company modal ----
 const showModal = ref(false)
+const editingCompany = ref(null)
 const submitting = ref(false)
 const submitError = ref('')
 const submitSuccess = ref('')
@@ -100,13 +155,28 @@ async function fetchUsers() {
 
 function openModal() {
   resetForm()
+  editingCompany.value = null
   showModal.value = true
   fetchUsers()
+}
+
+function openEdit(company) {
+  editingCompany.value = company
+  Object.assign(form, {
+    user_id: company.user_id || company.user?.id || '',
+    name: company.name || '', website: company.website || '', email: company.email || '', phone: company.phone || '',
+    description: company.description || '', industry: company.industry || '', company_size: company.company_size || '',
+    founded_year: company.founded_year || '', country: company.country || '', city: company.city || '', address: company.address || '',
+  })
+  submitError.value = ''
+  submitSuccess.value = ''
+  showModal.value = true
 }
 
 function closeModal() {
   if (submitting.value) return
   showModal.value = false
+  editingCompany.value = null
   resetForm()
 }
 
@@ -128,8 +198,15 @@ async function submitCompany() {
     if (!payload.city) delete payload.city
     if (!payload.address) delete payload.address
 
-    await adminApi.storeCompany(payload)
-    submitSuccess.value = 'Company created successfully.'
+    if (editingCompany.value) {
+      delete payload.user_id
+      await adminApi.updateCompany(editingCompany.value.id, payload)
+      submitSuccess.value = 'Company updated successfully.'
+    } else {
+      await adminApi.storeCompany(payload)
+      submitSuccess.value = 'Company created successfully.'
+    }
+    await fetchCompanies()
     setTimeout(closeModal, 1200)
   } catch (e) {
     const err = e.response?.data
@@ -139,7 +216,32 @@ async function submitCompany() {
   }
 }
 
-onMounted(fetchUsers)
+async function deleteCompany(company) {
+  if (!confirm(`Delete company "${company.name}"? This action cannot be undone.`)) return
+  try {
+    await adminApi.deleteCompany(company.id)
+    await fetchCompanies()
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Failed to delete company.'
+  }
+}
+
+async function updateCompanyStatus(company) {
+  const statuses = ['pending', 'approved', 'rejected', 'suspended']
+  const current = String(company.status || 'pending').toLowerCase()
+  const next = statuses[(statuses.indexOf(current) + 1) % statuses.length]
+  try {
+    await adminApi.updateCompanyStatus(company.id, next)
+    await fetchCompanies()
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Failed to update company status.'
+  }
+}
+
+onMounted(() => {
+  fetchUsers()
+  fetchCompanies()
+})
 </script>
 
 <template>
@@ -152,7 +254,7 @@ onMounted(fetchUsers)
           Companies
         </h2>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          {{ filteredCompanies.length }} of {{ sampleCompanies.length }} companies listed
+          {{ filteredCompanies.length }} of {{ pagination.total || 0 }} companies listed
         </p>
       </div>
       <button
@@ -160,7 +262,7 @@ onMounted(fetchUsers)
         class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
       >
         <Plus class="w-4 h-4" />
-        Add Company
+        {{ editingCompany ? 'Edit Company' : 'Add Company' }}
       </button>
     </div>
 
@@ -190,16 +292,22 @@ onMounted(fetchUsers)
           v-model="statusFilter"
           class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
         >
-          <option v-for="status in statuses" :key="status" :value="status">
-            {{ status }}
+          <option v-for="status in statusOptions" :key="status" :value="status">
+            {{ status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1) }}
           </option>
         </select>
       </div>
     </div>
 
+    <p v-if="error" class="mb-4 text-sm text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+      {{ error }}
+    </p>
+
+    <div v-if="loading" class="text-center py-10 text-slate-600 dark:text-slate-400">Loading companies...</div>
+
     <!-- Empty state -->
     <div
-      v-if="filteredCompanies.length === 0"
+      v-else-if="filteredCompanies.length === 0"
       class="text-center py-20 text-slate-500"
     >
       <Building2 class="w-12 h-12 mx-auto mb-3 opacity-50" />
@@ -216,7 +324,32 @@ onMounted(fetchUsers)
         v-for="company in filteredCompanies"
         :key="company.id"
         :company="company"
+        @edit="openEdit"
+        @delete="deleteCompany"
+        @status="updateCompanyStatus"
       />
+    </div>
+
+    <div v-if="pagination.last_page > 1" class="flex items-center justify-between px-1 py-4 mt-6">
+      <p class="text-xs text-slate-500">
+        Page {{ pagination.current_page }} of {{ pagination.last_page }}
+      </p>
+      <div class="flex items-center gap-2">
+        <button
+          class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          :disabled="pagination.current_page <= 1"
+          @click="goToPage(pagination.current_page - 1)"
+        >
+          Prev
+        </button>
+        <button
+          class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          :disabled="pagination.current_page >= pagination.last_page"
+          @click="goToPage(pagination.current_page + 1)"
+        >
+          Next
+        </button>
+      </div>
     </div>
 
     <!-- ===== Add Company Modal ===== -->
@@ -235,7 +368,7 @@ onMounted(fetchUsers)
           <div>
             <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
               <Building2 class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              Add Company
+              {{ editingCompany ? 'Edit Company' : 'Add Company' }}
             </h3>
             <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Register a new company on behalf of a user.</p>
           </div>
@@ -407,7 +540,7 @@ onMounted(fetchUsers)
           >
             <Loader2 v-if="submitting" class="w-4 h-4 animate-spin" />
             <CheckCircle2 v-else class="w-4 h-4" />
-            {{ submitting ? 'Creating...' : 'Create Company' }}
+            {{ submitting ? 'Saving...' : (editingCompany ? 'Save Company' : 'Create Company') }}
           </button>
         </div>
       </div>

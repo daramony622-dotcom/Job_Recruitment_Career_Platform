@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Building2,
@@ -13,49 +13,69 @@ import {
   ShieldCheck,
   CircleDot,
 } from 'lucide-vue-next'
-import { sampleCompanies } from '../data/companies'
+import { adminApi } from '../api'
+import { gradientSeed } from '../data/companies'
 
 const route = useRoute()
 const router = useRouter()
 
-const company = computed(() =>
-  sampleCompanies.find((c) => c.id === Number(route.params.id)),
-)
+const loading = ref(true)
+const error = ref('')
+const company = ref(null)
 
-const statusMeta = {
-  Active: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-  Pending: { dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-  Suspended: { dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
+async function fetchCompany() {
+  loading.value = true
+  error.value = ''
+
+  try {
+    const { data } = await adminApi.showCompany(route.params.id)
+    company.value = data.data || data
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Failed to load company details.'
+    company.value = null
+  } finally {
+    loading.value = false
+  }
 }
 
-const status = computed(() => statusMeta[company.value?.status] || statusMeta.Active)
+const statusMeta = {
+  approved: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
+  pending: { dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
+  rejected: { dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
+  suspended: { dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
+}
+
+const status = computed(() => statusMeta[(company.value?.status || '').toLowerCase()] || {
+  dot: 'bg-slate-500',
+  text: 'text-slate-600 dark:text-slate-400',
+})
 
 const detailCards = computed(() => [
   {
     label: 'Company Size',
-    value: company.value?.company_size ?? '—',
+    value: company.value?.company_size || '—',
     sub: 'Employees',
     icon: Users,
     iconClass: 'bg-indigo-500/15 text-indigo-400',
   },
   {
     label: 'Founded Year',
-    value: company.value?.founded_year ?? '—',
+    value: company.value?.founded_year || '—',
     sub: 'Established',
     icon: CalendarDays,
     iconClass: 'bg-amber-500/15 text-amber-400',
   },
   {
     label: 'Open Positions',
-    value: company.value?.active_openings ?? 0,
-    sub: (company.value?.active_openings ?? 0) > 0 ? 'Roles Hiring now' : 'No openings',
-    pill: (company.value?.active_openings ?? 0) > 0,
+    value: company.value?.jobs?.length || 0,
+    sub: (company.value?.jobs?.length || 0) > 0 ? 'Roles hiring now' : 'No openings',
+    pill: (company.value?.jobs?.length || 0) > 0,
     icon: Briefcase,
     iconClass: 'bg-blue-500/15 text-blue-400',
   },
   {
     label: 'Status',
-    value: company.value?.is_verified ? 'Approved' : company.value?.status ?? '—',
+    value: company.value?.is_verified ? 'Approved' : company.value?.status || 'Pending',
     sub: company.value?.is_verified ? 'Verified Platform Employer' : 'Awaiting verification',
     icon: ShieldCheck,
     iconClass: company.value?.is_verified
@@ -63,10 +83,33 @@ const detailCards = computed(() => [
       : 'bg-slate-500/15 text-slate-400',
   },
 ])
+
+const coverBackground = computed(() => {
+  if (company.value?.cover_image) return ''
+  const seed = Number(company.value?.id || 0)
+  return gradientSeed[seed % gradientSeed.length]
+})
+
+const logoBackground = computed(() => {
+  const seed = Number(company.value?.id || 0)
+  return company.value?.logo ? '' : gradientSeed[seed % gradientSeed.length]
+})
+
+onMounted(fetchCompany)
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto" v-if="company">
+  <div v-if="loading" class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto text-center text-slate-600 dark:text-slate-400">
+    Loading company details...
+  </div>
+
+  <div v-else-if="error" class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+    <p class="text-sm text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+      {{ error }}
+    </p>
+  </div>
+
+  <div class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto" v-else-if="company">
     <!-- Back navigation -->
     <button
       class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mb-6 transition-colors group"
@@ -87,7 +130,7 @@ const detailCards = computed(() => [
       <div
         v-else
         class="w-full h-full"
-        :style="{ background: company.coverGradient }"
+        :style="{ background: coverBackground }"
       ></div>
       <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/5"></div>
       <!-- Verified Company Profile badge -->
@@ -116,7 +159,7 @@ const detailCards = computed(() => [
               class="w-full h-full object-cover"
             />
             <template v-else>
-              <div class="w-full h-full flex items-center justify-center" :style="{ background: company.logoGradient }">
+              <div class="w-full h-full flex items-center justify-center" :style="{ background: logoBackground }">
                 {{ company.name.charAt(0) }}
               </div>
             </template>
@@ -137,7 +180,7 @@ const detailCards = computed(() => [
             <p class="text-blue-600 dark:text-blue-400 font-medium mt-1.5">{{ company.industry }}</p>
             <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 inline-flex items-center gap-1.5">
               <MapPin class="w-3.5 h-3.5" />
-              {{ company.city }}, {{ company.country }}
+              {{ company.city || '—' }}{{ company.city && company.country ? ', ' : '' }}{{ company.country || '' }}
             </p>
           </div>
 
@@ -147,6 +190,7 @@ const detailCards = computed(() => [
             target="_blank"
             rel="noopener"
             class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shrink-0"
+            v-if="company.website"
           >
             <Globe class="w-4 h-4" />
             Visit Company Website
@@ -155,7 +199,7 @@ const detailCards = computed(() => [
 
         <!-- Description -->
         <p class="mt-6 text-slate-700 dark:text-slate-300 leading-relaxed text-[15px] max-w-3xl">
-          {{ company.description }}
+          {{ company.description || 'No company description added yet.' }}
         </p>
       </div>
     </div>
@@ -217,7 +261,7 @@ const detailCards = computed(() => [
         :class="status.text"
       >
         <span class="w-2 h-2 rounded-full" :class="status.dot"></span>
-        {{ company.status }}
+        {{ (company.status || 'pending').toString().replace(/_/g, ' ') }}
       </span>
     </div>
 
@@ -235,13 +279,13 @@ const detailCards = computed(() => [
         </div>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold">
           <Building2 class="w-4 h-4" />
-          {{ company.active_openings }} Openings
+          {{ company.jobs?.length || 0 }} Openings
         </span>
       </div>
 
-      <div v-if="company.active_openings > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-if="(company.jobs?.length || 0) > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
-          v-for="n in company.active_openings"
+          v-for="n in (company.jobs?.length || 0)"
           :key="n"
           class="group bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl p-5 hover:border-blue-600/50 transition-colors"
         >

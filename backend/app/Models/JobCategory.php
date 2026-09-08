@@ -61,6 +61,11 @@ class JobCategory extends Model
         return $this->hasMany(JobCategory::class, 'parent_id')->orderBy('sort_order');
     }
 
+    public function jobs(): HasMany
+    {
+        return $this->hasMany(JobPost::class, 'category_id');
+    }
+
     public function activeChildren(): HasMany
     {
         return $this->children()->where('is_active', true);

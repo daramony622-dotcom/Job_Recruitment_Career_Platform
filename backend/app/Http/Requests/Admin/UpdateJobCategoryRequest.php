@@ -19,8 +19,8 @@ class UpdateJobCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Resolve the category ID from the route parameter.
-        $id = $this->route('job_category');
+        // The admin route binds the resource as {jobCategory}.
+        $id = $this->route('jobCategory') ?? $this->route('job_category');
 
         return [
             'parent_id'   => ['sometimes', 'nullable', 'exists:job_categories,id'],

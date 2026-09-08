@@ -54,7 +54,21 @@ const saveError = ref('')
 const isLoading = ref(true)
 const profileError = ref('')
 const api = useJobSeekerApi()
-const { setProfileAvatar } = useAuth()
+const { setProfileAvatar, user, token } = useAuth()
+
+const isAdmin = computed(() => {
+  return user.value?.role === 'admin' || profile.value?.role === 'admin' || profile.value?.user?.role === 'admin'
+})
+
+const adminDashboardUrl = computed(() => {
+  const baseUrl = import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174/'
+  const url = new URL('/dashboard', baseUrl)
+  if (token.value) {
+    url.searchParams.set('token', token.value)
+  }
+  return url.toString()
+})
+
 
 const education = ref([])
 const experience = ref([])
@@ -547,6 +561,18 @@ const formatDate = (iso) => {
 
           <!-- Action Buttons -->
           <div class="flex items-center gap-2.5 w-full md:w-auto shrink-0 flex-wrap pt-2 md:pt-0">
+            <a 
+              v-if="isAdmin"
+              :href="adminDashboardUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-2xl shadow-md shadow-purple-500/20 transition active:scale-95 cursor-pointer"
+              title="Go to Admin Dashboard"
+            >
+              <ShieldCheck class="w-4 h-4 text-purple-200" />
+              <span>Admin Dashboard</span>
+            </a>
+
             <button 
               @click="triggerAvatarUpload"
               type="button"

@@ -1,185 +1,200 @@
 <script setup>
-import { ref } from 'vue'
-import { Briefcase, Users, Building2, FileText, ArrowRight, TrendingUp, RefreshCw } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BarChart3,
+  Briefcase,
+  Building2,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  RefreshCw,
+  ShieldCheck,
+  Users,
+} from 'lucide-vue-next'
+import { adminApi } from '../api'
+import StatusBadge from '../components/StatusBadge.vue'
 
-// ទិន្នន័យស្ថិតិគំរូ
-const stats = ref({
-  jobPosts: 0,
-  candidates: 1,
-  companies: 0,
-  applications: 0
+const loading = ref(false)
+const error = ref('')
+const lastUpdated = ref(null)
+const report = ref({
+  summary: {
+    total_jobs: 0,
+    published_jobs: 0,
+    draft_jobs: 0,
+    closed_jobs: 0,
+    total_candidates: 0,
+    active_candidates: 0,
+    total_companies: 0,
+    total_applications: 0,
+  },
+  job_posts_by_status: {},
+  applications_by_status: {},
+  recent_jobs: [],
+  recent_applications: [],
 })
+
+const stats = computed(() => report.value.summary)
+
+const jobStatuses = computed(() => Object.entries(report.value.job_posts_by_status || {}).map(([status, count]) => ({
+  status,
+  count: Number(count),
+  percentage: percentage(count, stats.value.total_jobs),
+})))
+
+const applicationStatuses = computed(() => Object.entries(report.value.applications_by_status || {}).map(([status, count]) => ({
+  status,
+  count: Number(count),
+  percentage: percentage(count, stats.value.total_applications),
+})))
+
+const publishedRate = computed(() => percentage(stats.value.published_jobs, stats.value.total_jobs))
+const candidateRate = computed(() => percentage(stats.value.active_candidates, stats.value.total_candidates))
+const companyRate = computed(() => percentage(stats.value.total_companies, Math.max(stats.value.total_companies, 1)))
+
+const cards = computed(() => [
+  { label: 'Total job posts', value: stats.value.total_jobs, meta: `${publishedRate.value}% published`, icon: Briefcase, tone: 'blue', to: '/job-posts' },
+  { label: 'Candidates', value: stats.value.total_candidates, meta: `${candidateRate.value}% verified`, icon: Users, tone: 'teal', to: '/candidates' },
+  { label: 'Companies', value: stats.value.total_companies, meta: 'Platform employers', icon: Building2, tone: 'amber', to: '/companies' },
+  { label: 'Applications', value: stats.value.total_applications, meta: 'All submissions', icon: FileText, tone: 'violet', to: '/admin-resources/applications' },
+])
+
+function percentage(value, total) {
+  return total ? Math.min(100, Math.round((Number(value) / Number(total)) * 100)) : 0
+}
+
+function formatDate(value) {
+  if (!value) return '—'
+  return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+async function fetchReport() {
+  loading.value = true
+  error.value = ''
+  try {
+    const response = await adminApi.getReports()
+    const data = response.data?.data || {}
+    report.value = {
+      ...report.value,
+      ...data,
+      summary: { ...report.value.summary, ...(data.summary || {}) },
+    }
+    lastUpdated.value = new Date()
+  } catch (requestError) {
+    error.value = requestError.response?.data?.message || 'Unable to load dashboard data.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchReport)
 </script>
 
 <template>
-  <div class="p-6 sm:p-8 space-y-6 max-w-7xl mx-auto">
-    <!-- Header Title & Refresh -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Dashboard</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Overview of the recruitment platform and key statistics.</p>
-      </div>
-      <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-medium transition-colors shadow-sm">
-        <RefreshCw class="w-4 h-4 text-slate-500 dark:text-slate-400" />
-        Refresh
-      </button>
-    </div>
-
-    <!-- Top Quick Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <!-- Card 1 -->
-      <div class="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-5 rounded-2xl relative overflow-hidden backdrop-blur-md shadow-sm dark:shadow-lg group hover:border-blue-500/50 transition-all">
-        <div class="flex items-center justify-between">
-          <div class="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
-            <Briefcase class="w-5 h-5" />
-          </div>
-          <span class="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full">Active</span>
-        </div>
-        <div class="mt-4">
-          <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.jobPosts }}</p>
-          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Total Job Posts</p>
-        </div>
-        <router-link to="/job-posts" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
-          <span>View details</span>
-          <ArrowRight class="w-3.5 h-3.5" />
-        </router-link>
-      </div>
-
-      <!-- Card 2 -->
-      <div class="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-5 rounded-2xl relative overflow-hidden backdrop-blur-md shadow-sm dark:shadow-lg group hover:border-emerald-500/50 transition-all">
-        <div class="flex items-center justify-between">
-          <div class="w-10 h-10 rounded-xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-            <Users class="w-5 h-5" />
-          </div>
-          <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">+100%</span>
-        </div>
-        <div class="mt-4">
-          <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.candidates }}</p>
-          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Total Candidates</p>
-        </div>
-        <router-link to="/candidates" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300">
-          <span>View details</span>
-          <ArrowRight class="w-3.5 h-3.5" />
-        </router-link>
-      </div>
-
-      <!-- Card 3 -->
-      <div class="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-5 rounded-2xl relative overflow-hidden backdrop-blur-md shadow-sm dark:shadow-lg group hover:border-amber-500/50 transition-all">
-        <div class="flex items-center justify-between">
-          <div class="w-10 h-10 rounded-xl bg-amber-600/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
-            <Building2 class="w-5 h-5" />
-          </div>
-          <span class="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full">Verified</span>
-        </div>
-        <div class="mt-4">
-          <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.companies }}</p>
-          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Total Companies</p>
-        </div>
-        <router-link to="/companies" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300">
-          <span>View details</span>
-          <ArrowRight class="w-3.5 h-3.5" />
-        </router-link>
-      </div>
-
-      <!-- Card 4 -->
-      <div class="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-5 rounded-2xl relative overflow-hidden backdrop-blur-md shadow-sm dark:shadow-lg group hover:border-purple-500/50 transition-all">
-        <div class="flex items-center justify-between">
-          <div class="w-10 h-10 rounded-xl bg-purple-600/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
-            <FileText class="w-5 h-5" />
-          </div>
-          <span class="text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full">Total</span>
-        </div>
-        <div class="mt-4">
-          <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ stats.applications }}</p>
-          <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1">Applications Sent</p>
-        </div>
-        <router-link to="/reports" class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 dark:hover:text-purple-300">
-          <span>View details</span>
-          <ArrowRight class="w-3.5 h-3.5" />
-        </router-link>
-      </div>
-    </div>
-
-    <!-- Middle Section: Analytics & Progress -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- Publishing Overview (Progress Bars) -->
-      <div class="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 rounded-2xl backdrop-blur-md shadow-sm dark:shadow-lg lg:col-span-2 space-y-5">
-        <div class="flex items-center justify-between">
-          <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <TrendingUp class="w-4 h-4 text-blue-600 dark:text-blue-500" /> Publishing & Activity Overview
-          </h2>
-          <span class="text-xs text-slate-500 dark:text-slate-400">Real-time metrics</span>
-        </div>
-
-        <div class="space-y-4 pt-2">
-          <div>
-            <div class="flex justify-between text-xs font-medium mb-1.5">
-              <span class="text-slate-700 dark:text-slate-300">Published Jobs Rate</span>
-              <span class="text-blue-600 dark:text-blue-400">0%</span>
-            </div>
-            <div class="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-2.5 border border-slate-200 dark:border-slate-800">
-              <div class="bg-blue-600 h-2 rounded-full w-0 transition-all duration-500"></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs font-medium mb-1.5">
-              <span class="text-slate-700 dark:text-slate-300">Candidate Profile Completion</span>
-              <span class="text-emerald-600 dark:text-emerald-400">75%</span>
-            </div>
-            <div class="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-2.5 border border-slate-200 dark:border-slate-800">
-              <div class="bg-emerald-500 h-2 rounded-full w-3/4 transition-all duration-500"></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex justify-between text-xs font-medium mb-1.5">
-              <span class="text-slate-700 dark:text-slate-300">Company Approvals</span>
-              <span class="text-amber-600 dark:text-amber-400">50%</span>
-            </div>
-            <div class="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-2.5 border border-slate-200 dark:border-slate-800">
-              <div class="bg-amber-500 h-2 rounded-full w-1/2 transition-all duration-500"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Job Posts Status Box -->
-      <div class="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 rounded-2xl backdrop-blur-md shadow-sm dark:shadow-lg flex flex-col justify-between">
+  <div class="dashboard-page">
+    <div class="dashboard-container">
+      <header class="dashboard-header">
         <div>
-          <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-1">Job Posts by Status</h2>
-          <p class="text-xs text-slate-500 dark:text-slate-400">Distribution of active vs pending listings.</p>
+          <div class="dashboard-eyebrow"><span class="live-dot"></span> Platform overview</div>
+          <h1>Dashboard</h1>
+          <p>Monitor recruitment activity, account health, and the latest platform movement.</p>
         </div>
-        <div class="py-8 text-center">
-          <div class="w-24 h-24 mx-auto rounded-full border-4 border-blue-600/20 border-t-blue-500 flex items-center justify-center animate-spin-slow">
-            <span class="text-sm font-bold text-slate-800 dark:text-slate-200">0 Active</span>
+        <button class="dashboard-refresh" :disabled="loading" @click="fetchReport">
+          <RefreshCw class="w-4 h-4" :class="loading ? 'animate-spin' : ''" />
+          {{ loading ? 'Refreshing' : 'Refresh data' }}
+        </button>
+      </header>
+
+      <p v-if="error" class="dashboard-alert">{{ error }}</p>
+
+      <section class="metric-grid" aria-label="Platform metrics">
+        <router-link v-for="card in cards" :key="card.label" :to="card.to" class="metric-card" :class="`metric-${card.tone}`">
+          <div class="metric-topline">
+            <span class="metric-icon"><component :is="card.icon" class="w-5 h-5" /></span>
+            <ArrowUpRight class="w-4 h-4 metric-arrow" />
           </div>
-          <p class="text-xs text-slate-500 mt-4">No pending approvals required right now.</p>
-        </div>
-        <div class="pt-4 border-t border-slate-100 dark:border-slate-800/60 text-xs text-slate-500 dark:text-slate-400 flex justify-between">
-          <span>Total Checked</span>
-          <span class="text-slate-800 dark:text-slate-200 font-semibold">100%</span>
-        </div>
-      </div>
+          <p class="metric-label">{{ card.label }}</p>
+          <p v-if="loading" class="metric-value metric-skeleton"></p>
+          <p v-else class="metric-value">{{ card.value.toLocaleString() }}</p>
+          <p class="metric-meta"><span class="metric-positive">{{ card.meta }}</span></p>
+          <div class="metric-sparkline"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        </router-link>
+      </section>
 
-    </div>
+      <section class="dashboard-grid dashboard-grid-primary">
+        <article class="dashboard-panel progress-panel">
+          <div class="panel-heading">
+            <div><p class="panel-kicker">Operations health</p><h2>Recruitment activity</h2></div>
+            <BarChart3 class="w-5 h-5 panel-heading-icon" />
+          </div>
+          <div class="progress-list">
+            <div class="progress-row"><div class="progress-copy"><span>Published job posts</span><strong>{{ publishedRate }}%</strong></div><div class="progress-track"><span class="progress-fill fill-blue" :style="{ width: `${publishedRate}%` }"></span></div><small>{{ stats.published_jobs }} of {{ stats.total_jobs }} total posts are live</small></div>
+            <div class="progress-row"><div class="progress-copy"><span>Verified candidates</span><strong class="text-teal">{{ candidateRate }}%</strong></div><div class="progress-track"><span class="progress-fill fill-teal" :style="{ width: `${candidateRate}%` }"></span></div><small>{{ stats.active_candidates }} active and verified accounts</small></div>
+            <div class="progress-row"><div class="progress-copy"><span>Company coverage</span><strong class="text-amber">{{ companyRate }}%</strong></div><div class="progress-track"><span class="progress-fill fill-amber" :style="{ width: `${companyRate}%` }"></span></div><small>{{ stats.total_companies }} employers registered on the platform</small></div>
+          </div>
+        </article>
 
-    <!-- Bottom Tables / Recent Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 rounded-2xl backdrop-blur-md shadow-sm dark:shadow-lg">
-        <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4">Recent Job Posts</h2>
-        <div class="text-center py-8 text-slate-500 text-sm">
-          No recent job posts found.
-        </div>
-      </div>
+        <article class="dashboard-panel status-panel">
+          <div class="panel-heading"><div><p class="panel-kicker">Live distribution</p><h2>Job post status</h2></div><router-link to="/job-posts" class="panel-link">View all <ArrowRight class="w-3.5 h-3.5" /></router-link></div>
+          <div v-if="loading" class="panel-empty">Loading status data...</div>
+          <div v-else-if="jobStatuses.length === 0" class="panel-empty">No job status data yet.</div>
+          <div v-else class="status-list"><div v-for="row in jobStatuses" :key="row.status" class="status-row"><div class="status-name"><span class="status-dot" :class="`status-dot-${row.status}`"></span><StatusBadge :value="row.status" /></div><div class="status-count"><strong>{{ row.count }}</strong><span>{{ row.percentage }}%</span></div></div></div>
+          <div class="panel-footer"><span>Total tracked posts</span><strong>{{ stats.total_jobs.toLocaleString() }}</strong></div>
+        </article>
+      </section>
 
-      <div class="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 p-6 rounded-2xl backdrop-blur-md shadow-sm dark:shadow-lg">
-        <h2 class="text-base font-bold text-slate-900 dark:text-slate-100 mb-4">Recent Applications</h2>
-        <div class="text-center py-8 text-slate-500 text-sm">
-          No recent applications found.
-        </div>
-      </div>
+      <section class="dashboard-grid dashboard-grid-secondary">
+        <article class="dashboard-panel activity-panel">
+          <div class="panel-heading"><div><p class="panel-kicker">Latest movement</p><h2>Recent job posts</h2></div><router-link to="/job-posts" class="panel-link">Open list <ArrowRight class="w-3.5 h-3.5" /></router-link></div>
+          <div v-if="loading" class="panel-empty">Loading recent jobs...</div>
+          <div v-else-if="report.recent_jobs.length === 0" class="panel-empty">No recent job posts.</div>
+          <div v-else class="activity-list"><div v-for="job in report.recent_jobs" :key="job.id" class="activity-row"><div class="activity-avatar avatar-blue"><Briefcase class="w-4 h-4" /></div><div class="activity-content"><strong>{{ job.title }}</strong><span>{{ job.company?.name || 'Unassigned company' }} · {{ formatDate(job.created_at) }}</span></div><StatusBadge :value="job.status" /></div></div>
+        </article>
+
+        <article class="dashboard-panel activity-panel">
+          <div class="panel-heading"><div><p class="panel-kicker">Candidate pipeline</p><h2>Recent applications</h2></div><router-link to="/admin-resources/applications" class="panel-link">Open list <ArrowRight class="w-3.5 h-3.5" /></router-link></div>
+          <div v-if="loading" class="panel-empty">Loading recent applications...</div>
+          <div v-else-if="report.recent_applications.length === 0" class="panel-empty">No recent applications.</div>
+          <div v-else class="activity-list"><div v-for="application in report.recent_applications" :key="application.id" class="activity-row"><div class="activity-avatar avatar-teal"><Users class="w-4 h-4" /></div><div class="activity-content"><strong>{{ application.job_seeker?.name || application.jobSeeker?.name || 'Candidate' }}</strong><span>{{ application.job_post?.title || application.jobPost?.title || 'Application' }} · {{ formatDate(application.created_at) }}</span></div><StatusBadge :value="application.status" /></div></div>
+        </article>
+      </section>
+
+      <section class="dashboard-grid dashboard-grid-bottom">
+        <article class="dashboard-panel compact-panel">
+          <div class="panel-heading"><div><p class="panel-kicker">Application pipeline</p><h2>Applications by status</h2></div><FileText class="w-5 h-5 panel-heading-icon" /></div>
+          <div v-if="applicationStatuses.length" class="mini-status-list"><div v-for="row in applicationStatuses" :key="row.status" class="mini-status-row"><StatusBadge :value="row.status" /><div class="mini-bar"><span :style="{ width: `${row.percentage}%` }"></span></div><strong>{{ row.count }}</strong></div></div>
+          <p v-else class="panel-empty">No application data yet.</p>
+        </article>
+
+        <article class="dashboard-panel compact-panel system-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-kicker">Security & Platform Guard</p>
+              <h2>All systems protected</h2>
+            </div>
+            <router-link to="/security" class="panel-link">
+              Security Center <ArrowRight class="w-3.5 h-3.5" />
+            </router-link>
+          </div>
+          <div class="system-status">
+            <CheckCircle2 class="w-5 h-5 text-teal" />
+            <div>
+              <strong>Sanctum Bearer Guard & RBAC</strong>
+              <span>All administrative tokens and endpoints secured</span>
+            </div>
+            <span class="system-live">Guarded</span>
+          </div>
+          <div class="system-status">
+            <Clock3 class="w-5 h-5 text-slate-400" />
+            <div>
+              <strong>Last telemetry sync</strong>
+              <span>{{ lastUpdated ? lastUpdated.toLocaleTimeString() : 'Waiting for sync' }}</span>
+            </div>
+          </div>
+        </article>
+      </section>
     </div>
   </div>
 </template>

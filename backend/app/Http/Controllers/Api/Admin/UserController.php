@@ -38,6 +38,10 @@ class UserController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        if ($request->input('role') === 'job_seeker') {
+            $request->merge(['role' => 'user']);
+        }
+
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
@@ -79,10 +83,16 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
+        if ($request->has('role') && $request->user()?->role !== 'admin') {
+            abort(403, 'Only an authenticated administrator can change user roles.');
+        }
+
+        if ($request->input('role') === 'job_seeker') {
+            $request->merge(['role' => 'user']);
+        }
+
         $validated = $request->validate([
-            'name'      => ['sometimes', 'string', 'max:255'],
-            'email'     => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'is_active' => ['sometimes', 'boolean'],
+            'role' => ['required', 'string', 'in:admin,hr,user'],
         ]);
 
         $user = $this->userService->updateUser($user, $validated);
@@ -97,8 +107,12 @@ class UserController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(User $user): JsonResponse
+    public function destroy(Request $request, User $user): JsonResponse
     {
+        if ($request->user()?->is($user)) {
+            abort(422, 'You cannot delete the account currently being used.');
+        }
+
         $user->delete();
 
         return response()->json([

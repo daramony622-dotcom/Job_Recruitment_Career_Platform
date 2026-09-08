@@ -1,6 +1,6 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   Users,
   Search,
@@ -17,14 +17,19 @@ import { adminApi } from '../api'
 import StatusBadge from '../components/StatusBadge.vue'
 
 const router = useRouter()
+const route = useRoute()
+const loggedInUser = JSON.parse(localStorage.getItem('admin_user') || 'null')
+const canManageRoles = computed(() => loggedInUser?.role === 'admin')
 
 const loading = ref(false)
 const error = ref('')
+const notice = ref('')
 const candidates = ref([])
 const pagination = reactive({ current_page: 1, last_page: 1, total: 0, per_page: 20 })
 
 const filters = reactive({
   search: '',
+  role: route.query.role || '',
   per_page: 20,
   page: 1,
 })
@@ -36,7 +41,7 @@ async function fetchCandidates() {
     const params = { ...filters }
     if (!params.search) delete params.search
 
-    const { data } = await adminApi.getCandidates(params)
+    const { data } = await adminApi.getUsers(params)
     const pager = data.data || data
     candidates.value = pager.data || []
     Object.assign(pagination, {
@@ -53,10 +58,17 @@ async function fetchCandidates() {
 }
 
 watch(
-  () => filters.search,
+  () => [filters.search, filters.role],
   () => {
     filters.page = 1
     fetchCandidates()
+  },
+)
+
+watch(
+  () => route.query.role,
+  (role) => {
+    filters.role = role || ''
   },
 )
 
@@ -85,6 +97,7 @@ const editSuccess = ref('')
 const editForm = reactive({
   name: '',
   email: '',
+  role: 'user',
   is_active: true,
 })
 
@@ -92,6 +105,7 @@ function openEdit(c) {
   editingCandidate.value = c
   editForm.name = c.name || ''
   editForm.email = c.email || ''
+  editForm.role = c.role || 'user'
   editForm.is_active = c.is_active !== false
   editError.value = ''
   editSuccess.value = ''
@@ -109,12 +123,10 @@ async function submitEdit() {
   editError.value = ''
   editSuccess.value = ''
   try {
-    await adminApi.updateCandidate(editingCandidate.value.id, {
-      name: editForm.name,
-      email: editForm.email,
-      is_active: editForm.is_active,
-    })
-    editSuccess.value = 'Candidate updated successfully.'
+    const payload = {}
+    if (canManageRoles.value) payload.role = editForm.role
+    await adminApi.updateCandidate(editingCandidate.value.id, payload)
+    editSuccess.value = 'User role updated successfully.'
     await fetchCandidates()
     setTimeout(closeEditModal, 1000)
   } catch (e) {
@@ -131,10 +143,15 @@ async function submitEdit() {
 
 // ---- Delete ----
 async function onDelete(c) {
+  if (Number(c.id) === Number(loggedInUser?.id)) {
+    error.value = 'You cannot delete the account currently being used.'
+    return
+  }
   if (!confirm(`Delete candidate "${c.name}"? This action cannot be undone.`)) return
   try {
     await adminApi.deleteUser(c.id)
     error.value = ''
+    notice.value = `${c.name} was deleted successfully.`
     await fetchCandidates()
   } catch (e) {
     error.value = e.response?.data?.message || 'Delete failed.'
@@ -150,22 +167,34 @@ onMounted(fetchCandidates)
       <div>
         <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <Users class="w-6 h-6 text-blue-600 dark:text-blue-500" />
-          Candidates
+          Users & HR
         </h2>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ pagination.total }} candidates registered</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ pagination.total }} platform accounts</p>
       </div>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-3 mb-6">
       <div class="flex-1 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 max-w-xl">
         <Search class="w-4 h-4 text-slate-500" />
+        <label for="account-search" class="sr-only">Search accounts by name or email</label>
         <input
+          id="account-search"
           v-model="filters.search"
           type="text"
           placeholder="Search candidates by name or email..."
           class="bg-transparent outline-none text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 w-full"
         />
       </div>
+      <select
+        v-model="filters.role"
+        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
+        aria-label="Filter accounts by role"
+      >
+        <option value="">All roles</option>
+        <option value="user">User / job seeker</option>
+        <option value="hr">HR</option>
+        <option value="admin">Admin</option>
+      </select>
       <div class="flex gap-3">
         <button
           @click="fetchCandidates"
@@ -180,15 +209,18 @@ onMounted(fetchCandidates)
     <p v-if="error" class="mb-4 text-sm text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
       {{ error }}
     </p>
+    <p v-if="notice" class="mb-4 flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3">
+      <CheckCircle2 class="w-4 h-4" /> {{ notice }}
+    </p>
 
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left">
           <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-xs uppercase border-b border-slate-200 dark:border-slate-800">
             <tr>
-              <th class="px-5 py-3.5 font-semibold">Candidate</th>
+              <th class="px-5 py-3.5 font-semibold">Account</th>
               <th class="px-5 py-3.5 font-semibold">Email</th>
-              <th class="px-5 py-3.5 font-semibold">Role</th>
+              <th class="px-5 py-3.5 font-semibold">Access role</th>
               <th class="px-5 py-3.5 font-semibold">Location</th>
               <th class="px-5 py-3.5 font-semibold">Joined</th>
               <th class="px-5 py-3.5 font-semibold">Status</th>
@@ -197,10 +229,10 @@ onMounted(fetchCandidates)
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
             <tr v-if="loading" class="hover:bg-slate-100 dark:hover:bg-slate-800/30">
-              <td colspan="7" class="px-5 py-10 text-center text-slate-600 dark:text-slate-400">Loading candidates...</td>
+              <td colspan="7" class="px-5 py-10 text-center text-slate-600 dark:text-slate-400">Loading accounts...</td>
             </tr>
             <tr v-else-if="candidates.length === 0" class="hover:bg-slate-100 dark:hover:bg-slate-800/30">
-              <td colspan="7" class="px-5 py-10 text-center text-slate-600 dark:text-slate-400">No candidates found.</td>
+              <td colspan="7" class="px-5 py-10 text-center text-slate-600 dark:text-slate-400">No accounts found.</td>
             </tr>
             <tr
               v-for="c in candidates"
@@ -291,12 +323,12 @@ onMounted(fetchCandidates)
 
       <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
         <div class="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800">
-          <div>
+          <div v-if="canManageRoles">
             <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
               <Pencil class="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              Edit Candidate
+              Change user role
             </h3>
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Update the candidate's details.</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Only the access role can be changed here.</p>
           </div>
           <button
             @click="closeEditModal"
@@ -316,32 +348,19 @@ onMounted(fetchCandidates)
             <span>{{ editSuccess }}</span>
           </p>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Name</label>
-            <input
-              v-model="editForm.name"
-              type="text"
+          <div v-if="canManageRoles">
+            <label for="edit-account-role" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Access role</label>
+            <select
+              id="edit-account-role"
+              v-model="editForm.role"
               class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
-            />
+            >
+              <option value="user">User / job seeker</option>
+              <option value="hr">HR</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Email</label>
-            <input
-              v-model="editForm.email"
-              type="email"
-              class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
-            <input
-              v-model="editForm.is_active"
-              type="checkbox"
-              class="w-4 h-4 rounded accent-blue-600"
-            />
-            Active account
-          </label>
         </div>
 
         <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800">

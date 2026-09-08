@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\JobSeeker\SavedJobController;
 use App\Http\Controllers\Api\JobSeeker\SkillController;
 use Illuminate\Support\Facades\Route;
 
+
 /*
 |--------------------------------------------------------------------------
 | Job Seeker API Routes
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 | Base Prefix (/api/user OR /api/job-seeker) & Middleware (auth:sanctum, role:user)
 | are inherited from api.php
 */
+
 
 // Profile
 Route::get('profile', [ProfileController::class, 'show']);
@@ -30,11 +32,10 @@ Route::put('profile', [ProfileController::class, 'update']);
 Route::apiResource('education', EducationController::class);
 Route::apiResource('experience', ExperienceController::class);
 
-
 // Skills (attach/detach from user_skill pivot)
 Route::get('skills', [SkillController::class, 'index']);
 Route::get('skills/mine', [SkillController::class, 'mySkills']);
-Route::put('skills/mine', [SkillController::class, 'updateMySkills']);
+Route::match(['put', 'post'], 'skills/mine', [SkillController::class, 'updateMySkills']);
 Route::post('skills/custom', [SkillController::class, 'storeCustomSkill']);
 Route::delete('skills/custom/{name}', [SkillController::class, 'destroyCustomSkill']);
 
@@ -64,4 +65,6 @@ Route::get('interviews/{interview}', [InterviewController::class, 'show']);
 
 // Notifications
 Route::get('notifications', [NotificationController::class, 'index']);
-Route::patch('notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+Route::match(['post', 'patch'], 'notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);

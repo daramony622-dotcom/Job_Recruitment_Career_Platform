@@ -13,6 +13,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Star,
 } from 'lucide-vue-next'
 import { adminApi } from '../api'
 import StatusBadge from '../components/StatusBadge.vue'
@@ -32,6 +33,7 @@ const salaryPeriods = ['hourly', 'daily', 'monthly', 'yearly']
 const statuses = ['draft', 'published', 'closed', 'suspended']
 
 const showModal = ref(false)
+const editingJob = ref(null)
 const submitting = ref(false)
 const submitError = ref('')
 const submitSuccess = ref('')
@@ -129,15 +131,39 @@ async function fetchLookups() {
 
 async function openModal() {
   resetForm()
+  editingJob.value = null
   showModal.value = true
   if (companies.value.length === 0 || categories.value.length === 0 || skills.value.length === 0) {
     await fetchLookups()
   }
 }
 
+async function openEditModal(job) {
+  resetForm()
+  editingJob.value = job
+  showModal.value = true
+  await fetchLookups()
+  try {
+    const response = await adminApi.showJobPost(job.id)
+    const detail = response.data?.data || response.data
+    Object.assign(form, {
+      company_id: detail.company_id || detail.company?.id || '', category_id: detail.category_id || detail.category?.id || '',
+      title: detail.title || '', description: detail.description || '', requirements: detail.requirements || '', benefits: detail.benefits || '',
+      job_type: detail.job_type || 'full_time', work_mode: detail.work_mode || 'onsite', experience_level: detail.experience_level || '',
+      location: detail.location || '', country: detail.country || '', city: detail.city || '', salary_min: detail.salary_min ?? '', salary_max: detail.salary_max ?? '',
+      salary_currency: detail.salary_currency || 'USD', salary_period: detail.salary_period || 'monthly', is_salary_visible: detail.is_salary_visible !== false,
+      vacancies: detail.vacancies || 1, deadline: detail.deadline ? String(detail.deadline).slice(0, 10) : '', status: detail.status || 'draft', is_featured: detail.is_featured === true,
+    })
+    selectedSkills.value = (detail.skills || []).map((skill) => ({ id: skill.id, name: skill.name, level: skill.pivot?.level || '', is_required: skill.pivot?.is_required !== false }))
+  } catch (e) {
+    submitError.value = e.response?.data?.message || 'Failed to load job post for editing.'
+  }
+}
+
 function closeModal() {
   if (submitting.value) return
   showModal.value = false
+  editingJob.value = null
   resetForm()
 }
 
@@ -164,8 +190,13 @@ async function submitJobPost() {
       return item
     })
 
-    await adminApi.storeJobPost(payload)
-    submitSuccess.value = 'Job post created successfully.'
+    if (editingJob.value) {
+      await adminApi.updateJobPost(editingJob.value.id, payload)
+      submitSuccess.value = 'Job post updated successfully.'
+    } else {
+      await adminApi.storeJobPost(payload)
+      submitSuccess.value = 'Job post created successfully.'
+    }
     await fetchJobPosts()
     setTimeout(closeModal, 1100)
   } catch (e) {
@@ -225,11 +256,11 @@ function goToPage(page) {
 }
 
 function onView(job) {
-  alert(`View job post: ${job.title}`)
+  router.push(`/job-posts/${job.id}`)
 }
 
 function onEdit(job) {
-  alert(`Edit job post: ${job.title}`)
+  openEditModal(job)
 }
 
 async function onDelete(job) {
@@ -239,6 +270,15 @@ async function onDelete(job) {
     fetchJobPosts()
   } catch (e) {
     error.value = e.response?.data?.message || 'Delete failed.'
+  }
+}
+
+async function onToggleFeatured(job) {
+  try {
+    await adminApi.toggleFeaturedJobPost(job.id)
+    await fetchJobPosts()
+  } catch (e) {
+    error.value = e.response?.data?.message || 'Failed to update featured status.'
   }
 }
 
@@ -260,7 +300,7 @@ onMounted(fetchJobPosts)
         class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
       >
         <Plus class="w-4 h-4" />
-        New Job Post
+        {{ editingJob ? 'Edit Job Post' : 'New Job Post' }}
       </button>
     </div>
 
@@ -349,6 +389,13 @@ onMounted(fetchJobPosts)
               <td class="px-5 py-4">
                 <div class="flex items-center justify-end gap-1">
                   <button
+                    class="p-2 text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    :title="job.is_featured ? 'Remove featured' : 'Mark featured'"
+                    @click="onToggleFeatured(job)"
+                  >
+                    <Star class="w-4 h-4" :class="job.is_featured ? 'fill-amber-400 text-amber-500' : ''" />
+                  </button>
+                  <button
                     class="p-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                     title="View"
                     @click="onView(job)"
@@ -418,9 +465,9 @@ onMounted(fetchJobPosts)
           <div>
             <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
               <Briefcase class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              New Job Post
+              {{ editingJob ? 'Edit Job Post' : 'New Job Post' }}
             </h3>
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Create a new job post for any company.</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{{ editingJob ? 'Update this job post and its publishing settings.' : 'Create a new job post for any company.' }}</p>
           </div>
           <button
             @click="closeModal"
@@ -738,7 +785,7 @@ onMounted(fetchJobPosts)
           >
             <Loader2 v-if="submitting" class="w-4 h-4 animate-spin" />
             <CheckCircle2 v-else class="w-4 h-4" />
-            {{ submitting ? 'Creating...' : 'Create Job Post' }}
+            {{ submitting ? 'Saving...' : (editingJob ? 'Save Job Post' : 'Create Job Post') }}
           </button>
         </div>
       </div>

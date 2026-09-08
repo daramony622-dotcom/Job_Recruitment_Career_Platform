@@ -1,15 +1,24 @@
 <script setup>
 import { ref, computed } from 'vue'
-import { Bell, LogIn, UserPlus, LogOut, Menu, X, ChevronDown } from 'lucide-vue-next'
+import { Bell, LogIn, UserPlus, LogOut, Menu, X, ChevronDown, ShieldCheck } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../../composables/useAuth'
 import LanguageSwitcher from '../common/LanguageSwitcher.vue'
 import ThemeToggle from '../common/ThemeToggle.vue'
 
 const route = useRoute()
-const router = useRouter()
-const { user, profileAvatar, isAuthenticated, logout } = useAuth()
+const { user, profileAvatar, isAuthenticated, logout, token } = useAuth()
 const mobileOpen = ref(false)
+
+const adminDashboardUrl = computed(() => {
+  const baseUrl = import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174/'
+  const url = new URL('/dashboard', baseUrl)
+  if (token.value) {
+    url.searchParams.set('token', token.value)
+  }
+  return url.toString()
+})
+
 
 const handleLogout = async () => {
   mobileOpen.value = false

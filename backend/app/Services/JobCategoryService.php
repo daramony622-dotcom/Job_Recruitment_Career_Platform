@@ -20,6 +20,7 @@ class JobCategoryService
     public function paginate(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         return JobCategory::with('parent')
+            ->withCount('jobs')
             ->when(
                 ! empty($filters['search']),
                 fn ($q) => $q->where('name', 'like', "%{$filters['search']}%")

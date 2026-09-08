@@ -48,6 +48,28 @@ class NotificationController extends Controller
         ]);
     }
 
+    public function markAllAsRead(Request $request): JsonResponse
+    {
+        $request->user()->unreadNotifications->markAsRead();
+
+        return response()->json([
+            'message' => 'All notifications marked as read.',
+        ]);
+    }
+
+    public function destroy(Request $request, string $notification): JsonResponse
+    {
+        $userNotification = $request->user()->notifications()->whereKey($notification)->first();
+
+        if ($userNotification) {
+            $userNotification->delete();
+        }
+
+        return response()->json([
+            'message' => 'Notification deleted.',
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
