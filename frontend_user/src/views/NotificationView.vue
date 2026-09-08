@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Navbar from '../components/layout/Navbar.vue'
 import Footer from '../components/layout/Footer.vue'
+import { useJobSeekerApi } from '../composables/useJobSeekerApi'
 import {
   Bell, BellOff, Check, CheckCheck, Trash2, Filter,
   Mail, MessageSquare, Briefcase, Building2, Star,
@@ -124,6 +125,7 @@ const notifications = ref([
 const activeFilter = ref('all')
 const activeChannel = ref('all')
 const isRefreshing = ref(false)
+const api = useJobSeekerApi()
 
 const filters = [
   { key: 'all', label: 'All' },
@@ -156,24 +158,42 @@ const filteredNotifications = computed(() => {
 const unreadCount = computed(() => notifications.value.filter(n => !n.read_at).length)
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
-const markAsRead = (id) => {
-  const n = notifications.value.find(n => n.id === id)
-  if (n && !n.read_at) n.read_at = new Date().toISOString()
+const loadNotifications = async () => {
+  try {
+    const response = await api.listNotifications()
+    if (Array.isArray(response.data)) {
+      notifications.value = response.data
+    }
+  } catch {
+    // Keep the local fallback when the API is unavailable.
+  }
 }
 
-const markAllRead = () => {
-  notifications.value.forEach(n => {
-    if (!n.read_at) n.read_at = new Date().toISOString()
-  })
+const markAsRead = async (id) => {
+  const n = notifications.value.find(n => n.id === id)
+  if (n && !n.read_at) {
+    n.read_at = new Date().toISOString()
+    try {
+      await api.markNotificationRead(id)
+    } catch {
+      n.read_at = null
+    }
+  }
+}
+
+const markAllRead = async () => {
+  const unread = notifications.value.filter(n => !n.read_at)
+  await Promise.all(unread.map(n => markAsRead(n.id)))
 }
 
 const deleteNotification = (id) => {
   notifications.value = notifications.value.filter(n => n.id !== id)
 }
 
-const refresh = () => {
+const refresh = async () => {
   isRefreshing.value = true
-  setTimeout(() => { isRefreshing.value = false }, 1200)
+  await loadNotifications()
+  isRefreshing.value = false
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -201,6 +221,8 @@ const channelBadge = {
   email: { label: 'Email', cls: 'bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400' },
   sms: { label: 'SMS', cls: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400' }
 }
+
+onMounted(loadNotifications)
 </script>
 
 <template>

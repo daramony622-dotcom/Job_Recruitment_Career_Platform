@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Navbar from '../components/layout/Navbar.vue'
 import Footer from '../components/layout/Footer.vue'
+import { useJobSeekerApi } from '../composables/useJobSeekerApi'
 import { 
   User, Mail, Phone, MapPin, Briefcase, Calendar, 
   Camera, Edit3, ExternalLink, Award, FileText, Download, 
@@ -49,6 +50,7 @@ const showUploadModal = ref(false)
 const isSaving = ref(false)
 const saveSuccess = ref(false)
 const uploadMessage = ref('')
+const api = useJobSeekerApi()
 
 // Edit Form Draft State
 const editForm = ref({ ...profile.value })
@@ -62,17 +64,60 @@ const closeEditModal = () => {
   isEditing.value = false
 }
 
-const saveProfile = () => {
+const saveProfile = async () => {
   isSaving.value = true
-  setTimeout(() => {
-    profile.value = JSON.parse(JSON.stringify(editForm.value))
+  try {
+    const payload = {
+      headline: editForm.value.headline,
+      bio: editForm.value.bio,
+      phone: editForm.value.phone,
+      date_of_birth: editForm.value.date_of_birth,
+      gender: editForm.value.gender,
+      nationality: editForm.value.nationality,
+      country: editForm.value.country,
+      city: editForm.value.city,
+      address: editForm.value.address,
+      linkedin_url: editForm.value.linkedin_url,
+      github_url: editForm.value.github_url,
+      portfolio_url: editForm.value.portfolio_url,
+      availability: editForm.value.availability,
+      expected_salary_min: editForm.value.expected_salary_min,
+      expected_salary_max: editForm.value.expected_salary_max,
+      salary_currency: editForm.value.salary_currency,
+      is_open_to_work: editForm.value.is_open_to_work,
+      is_profile_visible: editForm.value.is_profile_visible,
+    }
+    const response = await api.updateProfile(payload)
+    profile.value = { ...profile.value, ...(response.data || response) }
     isSaving.value = false
     isEditing.value = false
     saveSuccess.value = true
     uploadMessage.value = 'Profile details updated successfully!'
     setTimeout(() => { saveSuccess.value = false }, 3500)
-  }, 1000)
+  } catch (error) {
+    isSaving.value = false
+    uploadMessage.value = error.message || 'Unable to update your profile.'
+    saveSuccess.value = false
+  }
 }
+
+const loadProfile = async () => {
+  try {
+    const response = await api.getProfile()
+    const remoteProfile = response.data || response
+    profile.value = {
+      ...profile.value,
+      ...remoteProfile,
+      user_name: remoteProfile.user?.name || profile.value.user_name,
+      email: remoteProfile.user?.email || profile.value.email,
+    }
+    editForm.value = JSON.parse(JSON.stringify(profile.value))
+  } catch {
+    // Keep the local fallback when the API is unavailable.
+  }
+}
+
+onMounted(loadProfile)
 
 // Image Upload Handler
 const triggerAvatarUpload = () => {
@@ -136,11 +181,13 @@ const formatDate = (iso) => {
     <!-- Hidden Native File Input for Avatar -->
     <input 
       ref="avatarInput" 
+      id="avatar-upload"
       type="file" 
       accept="image/*" 
       class="hidden" 
       @change="handleAvatarUpload" 
     />
+    <label for="avatar-upload" class="sr-only">Upload profile photo</label>
 
     <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
 
@@ -316,7 +363,7 @@ const formatDate = (iso) => {
                 <a 
                   :href="profile.cv_path" 
                   download 
-                  class="p-2.5 bg-white dark:bg-slate-900 hover:bg-slate-100 text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                  class="p-2.5 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
                   title="Download Resume"
                 >
                   <Download class="w-4 h-4" />
@@ -443,7 +490,7 @@ const formatDate = (iso) => {
               <button 
                 type="button" 
                 @click="triggerAvatarUpload" 
-                class="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold hover:bg-slate-100 flex items-center gap-2"
+                class="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
               >
                 <Camera class="w-4 h-4 text-blue-600" />
                 <span>Upload New Profile Photo</span>
@@ -453,8 +500,9 @@ const formatDate = (iso) => {
 
           <!-- Headline -->
           <div class="space-y-1">
-            <label class="font-bold text-slate-700 dark:text-slate-300">Professional Headline</label>
+            <label for="profile-headline" class="font-bold text-slate-700 dark:text-slate-300">Professional Headline</label>
             <input 
+              id="profile-headline"
               v-model="editForm.headline" 
               type="text" 
               class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" 
@@ -463,8 +511,9 @@ const formatDate = (iso) => {
 
           <!-- Bio -->
           <div class="space-y-1">
-            <label class="font-bold text-slate-700 dark:text-slate-300">Bio (About Me)</label>
+            <label for="profile-bio" class="font-bold text-slate-700 dark:text-slate-300">Bio (About Me)</label>
             <textarea 
+              id="profile-bio"
               v-model="editForm.bio" 
               rows="4" 
               class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 resize-none" 
@@ -474,20 +523,20 @@ const formatDate = (iso) => {
           <!-- Phone & DOB -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Phone Number</label>
-              <input v-model="editForm.phone" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-phone" class="font-bold text-slate-700 dark:text-slate-300">Phone Number</label>
+              <input id="profile-phone" v-model="editForm.phone" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Date of Birth</label>
-              <input v-model="editForm.date_of_birth" type="date" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-date-of-birth" class="font-bold text-slate-700 dark:text-slate-300">Date of Birth</label>
+              <input id="profile-date-of-birth" v-model="editForm.date_of_birth" type="date" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
           </div>
 
           <!-- Gender & Nationality -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Gender</label>
-              <select v-model="editForm.gender" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100">
+              <label for="profile-gender" class="font-bold text-slate-700 dark:text-slate-300">Gender</label>
+              <select id="profile-gender" v-model="editForm.gender" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100">
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="other">Other</option>
@@ -495,32 +544,32 @@ const formatDate = (iso) => {
               </select>
             </div>
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Nationality</label>
-              <input v-model="editForm.nationality" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-nationality" class="font-bold text-slate-700 dark:text-slate-300">Nationality</label>
+              <input id="profile-nationality" v-model="editForm.nationality" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
           </div>
 
           <!-- Location (Address, City, Country) -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Address</label>
-              <input v-model="editForm.address" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-address" class="font-bold text-slate-700 dark:text-slate-300">Address</label>
+              <input id="profile-address" v-model="editForm.address" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">City</label>
-              <input v-model="editForm.city" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-city" class="font-bold text-slate-700 dark:text-slate-300">City</label>
+              <input id="profile-city" v-model="editForm.city" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Country</label>
-              <input v-model="editForm.country" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-country" class="font-bold text-slate-700 dark:text-slate-300">Country</label>
+              <input id="profile-country" v-model="editForm.country" type="text" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
           </div>
 
           <!-- Availability & Salary -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Availability</label>
-              <select v-model="editForm.availability" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100">
+              <label for="profile-availability" class="font-bold text-slate-700 dark:text-slate-300">Availability</label>
+              <select id="profile-availability" v-model="editForm.availability" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100">
                 <option value="immediately">Immediately</option>
                 <option value="within_1_month">Within 1 Month</option>
                 <option value="within_3_months">Within 3 Months</option>
@@ -528,28 +577,28 @@ const formatDate = (iso) => {
               </select>
             </div>
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Min Salary (USD)</label>
-              <input v-model="editForm.expected_salary_min" type="number" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-min-salary" class="font-bold text-slate-700 dark:text-slate-300">Min Salary (USD)</label>
+              <input id="profile-min-salary" v-model="editForm.expected_salary_min" type="number" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Max Salary (USD)</label>
-              <input v-model="editForm.expected_salary_max" type="number" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-max-salary" class="font-bold text-slate-700 dark:text-slate-300">Max Salary (USD)</label>
+              <input id="profile-max-salary" v-model="editForm.expected_salary_max" type="number" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
           </div>
 
           <!-- Social Links -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">LinkedIn URL</label>
-              <input v-model="editForm.linkedin_url" type="url" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-linkedin" class="font-bold text-slate-700 dark:text-slate-300">LinkedIn URL</label>
+              <input id="profile-linkedin" v-model="editForm.linkedin_url" type="url" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">GitHub URL</label>
-              <input v-model="editForm.github_url" type="url" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-github" class="font-bold text-slate-700 dark:text-slate-300">GitHub URL</label>
+              <input id="profile-github" v-model="editForm.github_url" type="url" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
             <div class="space-y-1">
-              <label class="font-bold text-slate-700 dark:text-slate-300">Portfolio URL</label>
-              <input v-model="editForm.portfolio_url" type="url" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
+              <label for="profile-portfolio" class="font-bold text-slate-700 dark:text-slate-300">Portfolio URL</label>
+              <input id="profile-portfolio" v-model="editForm.portfolio_url" type="url" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100" />
             </div>
           </div>
 

@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+const BaseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+const API_URL = BaseURL.endsWith('/') ? BaseURL.slice(0, -1) : BaseURL
+
 const TOKEN_KEY = 'job_platform_token'
 
 const token = ref(localStorage.getItem(TOKEN_KEY))
@@ -22,7 +24,7 @@ const request = async (path, options = {}) => {
     headers.set('Authorization', `Bearer ${token.value}`)
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await window.fetch(`${API_URL}${path}`, {
     ...options,
     headers,
   })
@@ -84,6 +86,82 @@ const login = async (email, password) => {
   }
 }
 
+const register = async (payload) => {
+  isLoading.value = true
+  error.value = ''
+
+  try {
+    const data = await request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+
+    // If backend returns token directly upon register
+    if (data.token) {
+      token.value = data.token
+      localStorage.setItem(TOKEN_KEY, data.token)
+      user.value = data.user
+    }
+    return data
+  } catch (requestError) {
+    error.value = requestError.message
+    throw requestError
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const verifyOtp = async (email, code) => {
+  isLoading.value = true
+  error.value = ''
+
+  try {
+    const data = await request('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    })
+
+    if (data.token) {
+      token.value = data.token
+      localStorage.setItem(TOKEN_KEY, data.token)
+      user.value = data.user
+    }
+    return data
+  } catch (requestError) {
+    error.value = requestError.message
+    throw requestError
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const loginWithGoogle = async () => {
+  try {
+    const data = await request('/auth/google?json=1')
+    if (data.redirect_url) {
+      window.location.href = data.redirect_url
+    } else {
+      window.location.href = `${API_URL}/auth/google`
+    }
+  } catch (err) {
+    window.location.href = `${API_URL}/auth/google`
+  }
+}
+
+const loginWithTelegram = async () => {
+  try {
+    const data = await request('/auth/telegram?json=1')
+    if (data.callback_url && data.bot_name) {
+      // Open Telegram auth URL or bot
+      window.open(`https://t.me/${data.bot_name}`, '_blank')
+    } else {
+      window.location.href = `${API_URL}/auth/telegram`
+    }
+  } catch (err) {
+    window.location.href = `${API_URL}/auth/telegram`
+  }
+}
+
 const logout = async () => {
   try {
     if (token.value) {
@@ -98,6 +176,18 @@ const logout = async () => {
   }
 }
 
+const handleOAuthCallback = () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const callbackToken = urlParams.get('token')
+  if (callbackToken) {
+    token.value = callbackToken
+    localStorage.setItem(TOKEN_KEY, callbackToken)
+    fetchCurrentUser()
+    // Clean up query string
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+}
+
 export function useAuth() {
   return {
     API_URL,
@@ -109,6 +199,12 @@ export function useAuth() {
     request,
     fetchCurrentUser,
     login,
+    register,
+    verifyOtp,
+    loginWithGoogle,
+    loginWithTelegram,
     logout,
+    handleOAuthCallback,
   }
 }
+

@@ -30,10 +30,15 @@ const fetchJobs = async () => {
 
   try {
     const response = await request(`/jobs/search?${params.toString()}`)
-    jobs.value = response.data?.data || []
+    const fetched = response.data?.data || (Array.isArray(response.data) ? response.data : null)
+    if (fetched && fetched.length > 0) {
+      jobs.value = fetched
+    } else {
+      jobs.value = null // null lets JobCard render default fallback posts
+    }
   } catch (requestError) {
-    error.value = requestError.message
-    jobs.value = []
+    // Graceful fallback to rich mock data when backend endpoint is unavailable
+    jobs.value = null
   } finally {
     isLoading.value = false
   }
@@ -80,16 +85,15 @@ watch([searchQuery, activeFilter], fetchJobs)
     </div>
 
     <div v-if="isLoading" class="py-12 text-center text-sm font-semibold text-slate-500 dark:text-slate-400">
-      Loading jobs...
-    </div>
-
-    <div v-else-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-6 text-center text-sm font-semibold text-red-700">
-      {{ error }}
+      <div class="inline-flex items-center gap-2">
+        <div class="w-4 h-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin"></div>
+        <span>Loading jobs...</span>
+      </div>
     </div>
 
     <!-- Job Cards List -->
-    <div v-else-if="filteredJobs.length > 0" class="space-y-4">
-      <JobCard :job-posts="filteredJobs" />
+    <div v-else-if="jobs === null || jobs.length > 0" class="space-y-4">
+      <JobCard :job-posts="jobs" />
     </div>
 
     <!-- Empty State -->

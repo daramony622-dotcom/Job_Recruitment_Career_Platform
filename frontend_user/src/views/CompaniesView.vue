@@ -28,6 +28,17 @@ const industries = [
 
 const companySizes = ['All', '1-10', '11-50', '51-200', '201-500', '501-1000', '1000+']
 
+const createCompany = async (companyData) => {
+  // Simulate an API call to create a new company
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newCompany = { id: Date.now(), ...companyData }
+      companies.value.push(newCompany)
+      resolve(newCompany)
+    }, 500)
+  })
+}
+
 const companies = ref([
   {
     id: 1,
@@ -150,7 +161,7 @@ const goToCompanyDetail = (id) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-200">
+  <div class="min-h-screen bg-slate-50/60 dark:bg-[#070c16] font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-300">
     <Navbar />
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">

@@ -55,11 +55,11 @@ const toggleDropdown = (name) => {
 </script>
 
 <template>
-  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm relative">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#0d1526] p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800/70 shadow-xs relative">
     <div class="flex flex-wrap items-center gap-2">
 
-      <div class="flex items-center gap-2 px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-sm font-semibold select-none">
-        <SlidersHorizontal class="w-4 h-4 text-slate-600" />
+      <div class="flex items-center gap-2 px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 text-sm font-semibold select-none">
+        <SlidersHorizontal class="w-4 h-4 text-slate-600 dark:text-slate-300" />
         <span>Filters</span>
       </div>
 
@@ -70,8 +70,8 @@ const toggleDropdown = (name) => {
           type="button"
           class="flex items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition cursor-pointer"
           :class="location 
-            ? 'bg-slate-100 text-blue-600 border border-transparent' 
-            : 'bg-white border border-slate-200 hover:border-slate-300 text-slate-700'"
+            ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-transparent'
+            : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200'"
         >
           <div class="flex items-center gap-2 truncate">
             <MapPin v-if="location" class="w-4 h-4 text-blue-500 shrink-0" />
@@ -81,7 +81,7 @@ const toggleDropdown = (name) => {
             <span 
               v-if="location" 
               @click.stop="location = ''"
-              class="p-0.5 hover:bg-slate-200 rounded-md text-slate-800 transition"
+              class="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-slate-800 dark:text-slate-200 transition"
               title="Clear location"
             >
               <X class="w-4 h-4" />
@@ -90,11 +90,11 @@ const toggleDropdown = (name) => {
           </div>
         </button>
 
-        <div v-if="openDropdown === 'location'" class="absolute left-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+        <div v-if="openDropdown === 'location'" class="absolute left-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden">
           <div class="max-h-52 overflow-y-auto p-1">
             <button
               @click="location = ''; openDropdown = null"
-              class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 text-slate-700"
+              class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
             >
               Location (All)
             </button>
@@ -103,7 +103,7 @@ const toggleDropdown = (name) => {
               :key="loc"
               @click="location = loc; openDropdown = null"
               class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 flex items-center justify-between"
-              :class="location === loc ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-700'"
+              :class="location === loc ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-700 dark:text-slate-200'"
             >
               <span class="truncate">{{ loc }}</span>
               <Check v-if="location === loc" class="w-4 h-4 text-blue-600 shrink-0" />
@@ -119,8 +119,8 @@ const toggleDropdown = (name) => {
           type="button"
           class="flex items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition cursor-pointer"
           :class="salary 
-            ? 'bg-slate-100 text-blue-600 border border-transparent' 
-            : 'bg-white border border-slate-200 hover:border-slate-300 text-slate-700'"
+            ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-transparent'
+            : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200'"
         >
           <div class="flex items-center gap-2 truncate">
             <DollarSign v-if="salary" class="w-4 h-4 text-blue-500 shrink-0" />
@@ -130,7 +130,7 @@ const toggleDropdown = (name) => {
             <span 
               v-if="salary" 
               @click.stop="salary = ''"
-              class="p-0.5 hover:bg-slate-200 rounded-md text-slate-800 transition"
+              class="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-slate-800 dark:text-slate-200 transition"
               title="Clear salary"
             >
               <X class="w-4 h-4" />
@@ -139,11 +139,11 @@ const toggleDropdown = (name) => {
           </div>
         </button>
 
-        <div v-if="openDropdown === 'salary'" class="absolute left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+        <div v-if="openDropdown === 'salary'" class="absolute left-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden">
           <div class="max-h-52 overflow-y-auto p-1">
             <button
               @click="salary = ''; openDropdown = null"
-              class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 text-slate-700"
+              class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
             >
               Any salary
             </button>
@@ -152,7 +152,7 @@ const toggleDropdown = (name) => {
               :key="sal"
               @click="salary = sal; openDropdown = null"
               class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 flex items-center justify-between"
-              :class="salary === sal ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-700'"
+              :class="salary === sal ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-700 dark:text-slate-200'"
             >
               <span>{{ sal }}</span>
               <Check v-if="salary === sal" class="w-4 h-4 text-blue-600 shrink-0" />
@@ -160,7 +160,7 @@ const toggleDropdown = (name) => {
           </div>
         </div>
       </div>
-
+      
       <!-- Time Dropdown -->
       <div class="relative">
         <button 
@@ -168,8 +168,8 @@ const toggleDropdown = (name) => {
           type="button"
           class="flex items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition cursor-pointer"
           :class="time 
-            ? 'bg-slate-100 text-blue-600 border border-transparent' 
-            : 'bg-white border border-slate-200 hover:border-slate-300 text-slate-700'"
+            ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-transparent'
+            : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200'"
         >
           <div class="flex items-center gap-2 truncate">
             <Clock v-if="time" class="w-4 h-4 text-blue-500 shrink-0" />
@@ -179,7 +179,7 @@ const toggleDropdown = (name) => {
             <span 
               v-if="time" 
               @click.stop="time = ''"
-              class="p-0.5 hover:bg-slate-200 rounded-md text-slate-800 transition"
+              class="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-slate-800 dark:text-slate-200 transition"
               title="Clear time"
             >
               <X class="w-4 h-4" />
@@ -188,11 +188,11 @@ const toggleDropdown = (name) => {
           </div>
         </button>
 
-        <div v-if="openDropdown === 'time'" class="absolute left-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+        <div v-if="openDropdown === 'time'" class="absolute left-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden">
           <div class="max-h-52 overflow-y-auto p-1">
             <button
               @click="time = ''; openDropdown = null"
-              class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 text-slate-700"
+              class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
             >
               Any time
             </button>
@@ -201,7 +201,7 @@ const toggleDropdown = (name) => {
               :key="t"
               @click="time = t; openDropdown = null"
               class="w-full text-left px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 flex items-center justify-between"
-              :class="time === t ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-700'"
+              :class="time === t ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-semibold' : 'text-slate-700 dark:text-slate-200'"
             >
               <span>{{ t }}</span>
               <Check v-if="time === t" class="w-4 h-4 text-blue-600 shrink-0" />

@@ -45,15 +45,15 @@ const selectTag = (tag) => {
 </script>
 
 <template>
-  <section class="relative min-h-[540px] w-full bg-cover bg-center flex items-center px-4 sm:px-8 py-16 text-white overflow-hidden rounded-3xl bg-[url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1920&auto=format&fit=crop')] shadow-xl my-2">
+  <section class="relative min-h-[520px] w-full bg-cover bg-center flex items-center px-4 sm:px-8 py-16 text-white overflow-hidden rounded-3xl bg-[url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1920&auto=format&fit=crop')] shadow-xl my-2">
     
     <!-- Dark Gradient Overlay -->
-    <div class="absolute inset-0 bg-gradient-to-r from-slate-950/78 via-slate-900/55 to-blue-950/30"></div>
+    <div class="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-900/60 to-blue-950/40"></div>
 
     <div class="relative z-10 max-w-5xl mx-auto w-full space-y-8">
       
       <!-- Top Badge -->
-      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-white/70 text-xs font-semibold text-slate-700 shadow-sm">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-white/70 text-xs font-bold text-slate-800 shadow-sm">
         <span class="flex h-2 w-2 relative">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
           <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
@@ -74,7 +74,7 @@ const selectTag = (tag) => {
       </div>
 
       <!-- Glassmorphism Search Box Form -->
-      <form @submit.prevent="handleSearch" class="bg-white/95 dark:bg-slate-900/95 p-2.5 rounded-2xl shadow-2xl backdrop-blur-xl border border-white/20 dark:border-slate-800 flex flex-col md:flex-row items-center gap-2 max-w-3xl">
+      <form @submit.prevent="handleSearch" class="bg-white/95 dark:bg-slate-900/95 p-2 rounded-2xl shadow-2xl backdrop-blur-xl border border-white/20 dark:border-slate-800 flex flex-col md:flex-row items-center gap-2 max-w-3xl">
         
         <!-- Job Title Input -->
         <div class="flex items-center gap-3 px-3.5 py-2.5 w-full md:w-1/2 bg-slate-50 dark:bg-slate-800/80 md:bg-transparent rounded-xl">
@@ -124,7 +124,7 @@ const selectTag = (tag) => {
 
       <!-- Popular Tags -->
       <div class="flex flex-wrap items-center gap-2 text-xs text-slate-300">
-        <span class="text-slate-400 font-semibold flex items-center gap-1">
+        <span class="text-slate-300 font-bold flex items-center gap-1">
           <Sparkles class="w-3.5 h-3.5 text-amber-400" /> Popular:
         </span>
         <button 
@@ -132,7 +132,7 @@ const selectTag = (tag) => {
           :key="tag"
           @click="selectTag(tag)"
           type="button"
-          class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-slate-200 transition font-medium cursor-pointer"
+          class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-slate-100 transition font-semibold cursor-pointer"
         >
           {{ tag }}
         </button>
@@ -146,7 +146,7 @@ const selectTag = (tag) => {
           </div>
           <div>
             <div class="text-base font-extrabold text-white">12,400+</div>
-            <div class="text-[11px] text-slate-400 font-medium">Live jobs</div>
+            <div class="text-[11px] text-slate-300 font-medium">Live jobs</div>
           </div>
         </div>
 
@@ -156,7 +156,7 @@ const selectTag = (tag) => {
           </div>
           <div>
             <div class="text-base font-extrabold text-white">3,200+</div>
-            <div class="text-[11px] text-slate-400 font-medium">Companies</div>
+            <div class="text-[11px] text-slate-300 font-medium">Companies</div>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ const selectTag = (tag) => {
           </div>
           <div>
             <div class="text-base font-extrabold text-white">890k+</div>
-            <div class="text-[11px] text-slate-400 font-medium">Candidates</div>
+            <div class="text-[11px] text-slate-300 font-medium">Candidates</div>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ const selectTag = (tag) => {
           </div>
           <div>
             <div class="text-base font-extrabold text-white">42</div>
-            <div class="text-[11px] text-slate-400 font-medium">Countries</div>
+            <div class="text-[11px] text-slate-300 font-medium">Countries</div>
           </div>
         </div>
       </div>

@@ -13,7 +13,7 @@ const socialLinks = [
 </script>
 
 <template>
-  <footer class="bg-white dark:bg-slate-900 backdrop-blur-md text-slate-700 dark:text-slate-300 py-10 border-t border-slate-200 dark:border-slate-800 shadow-sm font-sans transition-colors duration-200">
+  <footer class="bg-white dark:bg-[#0d1526] text-slate-700 dark:text-slate-300 py-12 border-t border-slate-200 dark:border-slate-800/60 font-sans transition-colors duration-300">
     <div class="max-w-7xl mx-auto px-6 lg:px-8 space-y-8">
       <!-- Main Content Grid -->
       <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start pb-8 border-b border-slate-200 dark:border-slate-800">

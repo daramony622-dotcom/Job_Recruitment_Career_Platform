@@ -1,10 +1,10 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { 
   Mail, Lock, Eye, EyeOff, Send, ArrowLeft, 
-  Briefcase, CheckCircle2, ShieldCheck, Sparkles 
+  CheckCircle2, ShieldCheck, Sparkles 
 } from 'lucide-vue-next'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
 import LanguageSwitcher from '../components/common/LanguageSwitcher.vue'
@@ -16,7 +16,11 @@ const rememberMe = ref(false)
 const showPassword = ref(false)
 const isSubmitting = ref(false)
 const loginError = ref('')
-const { login } = useAuth()
+const { login, loginWithGoogle, loginWithTelegram, handleOAuthCallback } = useAuth()
+
+onMounted(() => {
+  handleOAuthCallback()
+})
 
 const handleLogin = async () => {
   isSubmitting.value = true
@@ -34,7 +38,7 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 font-sans bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+  <div class="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 font-sans bg-slate-50 dark:bg-[#070c16] transition-colors duration-300">
     
     <!-- LEFT COLUMN: Full-Page Split-Screen Branding Panel -->
     <div class="relative hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-900 text-white overflow-hidden">
@@ -90,7 +94,7 @@ const handleLogin = async () => {
     </div>
 
     <!-- RIGHT COLUMN: Form Panel -->
-    <div class="flex flex-col justify-between p-6 sm:p-12 lg:p-16 relative">
+    <div class="flex flex-col justify-between p-6 sm:p-12 lg:p-16 relative bg-white dark:bg-[#0d1526] transition-colors duration-300">
       
       <!-- Top Action Bar (Theme & Language) -->
       <div class="flex items-center justify-between sm:justify-end gap-3 pb-6">
@@ -189,16 +193,17 @@ const handleLogin = async () => {
         <!-- Divider -->
         <div class="relative flex items-center justify-center my-6">
           <div class="border-t border-slate-200 dark:border-slate-800 w-full"></div>
-          <span class="bg-slate-50 dark:bg-slate-950 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 absolute">
+          <span class="bg-white dark:bg-[#0d1526] px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 absolute">
             OR Continue With
           </span>
         </div>
 
         <!-- Social Login Buttons -->
         <div class="grid grid-cols-2 gap-3">
-          <button 
+          <button
             type="button"
-            class="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 transition active:scale-[0.99] shadow-2xs cursor-pointer"
+            @click="loginWithGoogle"
+            class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-50 dark:bg-[#0d1526] border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all duration-150 active:scale-[0.99] cursor-pointer"
           >
             <svg class="w-4 h-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -209,14 +214,16 @@ const handleLogin = async () => {
             <span>Google</span>
           </button>
 
-          <button 
+          <button
             type="button"
-            class="flex items-center justify-center gap-2 py-3 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 transition active:scale-[0.99] shadow-2xs cursor-pointer"
+            @click="loginWithTelegram"
+            class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-50 dark:bg-[#0d1526] border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all duration-150 active:scale-[0.99] cursor-pointer"
           >
             <Send class="w-4 h-4 text-sky-500 fill-sky-500" />
             <span>Telegram</span>
           </button>
         </div>
+
 
         <!-- Register Link Navigation -->
         <div class="text-center pt-4">

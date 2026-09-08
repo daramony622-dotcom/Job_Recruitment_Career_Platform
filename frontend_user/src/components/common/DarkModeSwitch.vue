@@ -1,13 +1,8 @@
 <script setup>
-import { onMounted } from 'vue'
 import { Sun, Moon } from 'lucide-vue-next'
 import { useTheme } from '../../composables/useTheme'
 
-const { isDark, toggleTheme, initTheme } = useTheme()
-
-onMounted(() => {
-  initTheme()
-})
+const { isDark, toggleTheme } = useTheme()
 </script>
 
 <template>

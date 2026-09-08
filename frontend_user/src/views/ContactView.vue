@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import Navbar from '../components/layout/Navbar.vue'
 import Footer from '../components/layout/Footer.vue'
+import LanguageSwitcher from '../components/common/LanguageSwitcher.vue'
 import { 
   Mail, Phone, MapPin, Send, Clock, MessageSquare, 
   Building2, Globe, Compass, CheckCircle2, Sparkles,
@@ -78,7 +79,7 @@ const contactCards = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-200">
+  <div class="min-h-screen bg-slate-50/60 dark:bg-[#070c16] font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-300">
     <Navbar />
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
@@ -91,7 +92,7 @@ const contactCards = [
         </span>
 
         <h1 class="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">
-          Get in Touch with <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">ETEC Center Team</span>
+          Get in Touch with <span class="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">ETEC Center Team</span>
         </h1>
 
         <p class="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
@@ -111,7 +112,7 @@ const contactCards = [
               <component :is="card.icon" class="w-6 h-6" />
             </div>
             <h3 class="font-extrabold text-slate-900 dark:text-white text-base">{{ card.title }}</h3>
-            <p class="text-xs text-blue-600 dark:text-blue-400 font-bold break-words">{{ card.value }}</p>
+            <p class="text-xs text-blue-600 dark:text-blue-400 font-bold wrap-break-word">{{ card.value }}</p>
             <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{{ card.desc }}</p>
           </div>
 
@@ -153,7 +154,7 @@ const contactCards = [
             
             <!-- Inquiry Category Selector -->
             <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Inquiry Type</label>
+              <span class="block text-xs font-bold text-slate-700 dark:text-slate-300">Inquiry Type</span>
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   v-for="type in inquiryTypes"
@@ -163,7 +164,7 @@ const contactCards = [
                   class="py-2 px-3 rounded-xl text-xs font-bold border transition text-center cursor-pointer"
                   :class="subjectType === type.id 
                     ? 'bg-blue-600 text-white border-blue-600 shadow-xs' 
-                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'"
+                    : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'"
                 >
                   {{ type.label }}
                 </button>
@@ -173,10 +174,11 @@ const contactCards = [
             <!-- Full Name & Email -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Full Name</label>
+                <label for="contact-name" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Full Name</label>
                 <div class="relative">
                   <User class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input 
+                    id="contact-name"
                     v-model="name"
                     type="text" 
                     placeholder="Sokha Kim" 
@@ -187,10 +189,11 @@ const contactCards = [
               </div>
 
               <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Email Address</label>
+                <label for="contact-email" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Email Address</label>
                 <div class="relative">
                   <Mail class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input 
+                    id="contact-email"
                     v-model="email"
                     type="email" 
                     placeholder="sokha@example.com" 
@@ -204,10 +207,11 @@ const contactCards = [
             <!-- Phone & Subject -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Phone Number (Optional)</label>
+                <label for="contact-phone" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Phone Number (Optional)</label>
                 <div class="relative">
                   <Phone class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input 
+                    id="contact-phone"
                     v-model="phone"
                     type="tel" 
                     placeholder="+855 12 345 678" 
@@ -217,10 +221,11 @@ const contactCards = [
               </div>
 
               <div class="space-y-1.5">
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Subject</label>
+                <label for="contact-subject" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Subject</label>
                 <div class="relative">
                   <Tag class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input 
+                    id="contact-subject"
                     v-model="subject"
                     type="text" 
                     placeholder="How can we help you?" 
@@ -233,8 +238,9 @@ const contactCards = [
 
             <!-- Message Textarea -->
             <div class="space-y-1.5">
-              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Message Content</label>
+              <label for="contact-message" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Message Content</label>
               <textarea 
+                id="contact-message"
                 v-model="message"
                 rows="5" 
                 placeholder="Please describe your questions, feedback, or inquiry in detail..." 
@@ -313,6 +319,7 @@ const contactCards = [
                 allowfullscreen="" 
                 loading="lazy" 
                 referrerpolicy="no-referrer-when-downgrade"
+                title="ETEC Center location map"
                 class="w-full rounded-t-2xl"
               ></iframe>
 

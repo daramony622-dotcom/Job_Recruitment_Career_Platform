@@ -32,8 +32,8 @@ Route::apiResource('experience', ExperienceController::class);
 
 // Skills (attach/detach from user_skill pivot)
 Route::get('skills', [SkillController::class, 'index']);
-Route::post('skills', [SkillController::class, 'store']);
-Route::delete('skills/{skill}', [SkillController::class, 'destroy']);
+Route::get('skills/mine', [SkillController::class, 'mySkills']);
+Route::put('skills/mine', [SkillController::class, 'updateMySkills']);
 
 // CV management
 Route::apiResource('cv', CVController::class)->only([

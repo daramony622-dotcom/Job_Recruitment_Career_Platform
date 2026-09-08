@@ -14,7 +14,7 @@ function calculateInitialTheme() {
   if (storedTheme === 'dark') return true
   if (storedTheme === 'light') return false
 
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+  return false
 }
 
 function updateDOM(dark) {
@@ -24,6 +24,13 @@ function updateDOM(dark) {
   } else {
     root.classList.remove('dark')
   }
+}
+
+function updateThemeWithTransition(dark) {
+  const root = document.documentElement
+  root.classList.add('theme-changing')
+  updateDOM(dark)
+  window.setTimeout(() => root.classList.remove('theme-changing'), 320)
 }
 
 export function initTheme() {
@@ -40,7 +47,7 @@ export function toggleTheme() {
   isDark.value = !isDark.value
   const newTheme = isDark.value ? 'dark' : 'light'
   localStorage.setItem(THEME_KEY, newTheme)
-  updateDOM(isDark.value)
+  updateThemeWithTransition(isDark.value)
   return newTheme
 }
 

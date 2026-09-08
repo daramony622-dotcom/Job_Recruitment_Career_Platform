@@ -83,14 +83,14 @@ const stats = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-slate-950 font-sans text-slate-900 dark:text-slate-100 antialiased">
+  <div class="min-h-screen bg-slate-50/60 dark:bg-[#070c16] font-sans text-slate-900 dark:text-slate-100 antialiased transition-colors duration-300">
     <Navbar />
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-14">
       
       <!-- ─── 1. High-End Hero Banner ────────────────────────────────────── -->
-      <section class="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 text-white p-8 sm:p-14 shadow-xl shadow-blue-950/10">
-        <div class="absolute inset-0 bg-[linear-gradient(115deg,transparent_0%,rgba(59,130,246,0.18)_55%,rgba(255,255,255,0.08)_100%)] pointer-events-none"></div>
+      <section class="relative rounded-2xl overflow-hidden bg-linear-to-br from-slate-950 via-blue-950 to-blue-800 text-white p-8 sm:p-14 shadow-xl shadow-blue-950/10">
+        <div class="absolute inset-0 bg-linear-to-br from-transparent via-blue-500/15 to-white/10 pointer-events-none"></div>
 
         <div class="relative z-10 max-w-3xl space-y-5">
           <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-blue-100">
@@ -173,7 +173,7 @@ const stats = [
         <!-- 3 Team Member Cards Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div 
-            v-for="(member, idx) in team" 
+            v-for="member in team" 
             :key="member.name"
             class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-8 space-y-5 shadow-sm hover:shadow-lg flex flex-col justify-between relative group"
           >
@@ -243,7 +243,7 @@ const stats = [
       </section>
 
       <!-- ─── 5. Contact & Support CTA Banner ────────────────────────────── -->
-      <section class="bg-gradient-to-r from-blue-700 to-indigo-700 rounded-2xl p-8 sm:p-12 text-white shadow-xl shadow-blue-900/10 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <section class="bg-linear-to-r from-blue-700 to-indigo-700 rounded-2xl p-8 sm:p-12 text-white shadow-xl shadow-blue-900/10 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div class="space-y-2 max-w-xl">
           <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Have Questions or Need Assistance?</h2>
           <p class="text-xs sm:text-sm text-blue-100">Our team is here to assist candidates and hiring employers 24/7.</p>

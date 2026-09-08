@@ -1,24 +1,22 @@
 <script setup>
-import { onMounted } from 'vue'
 import { Sun, Moon } from 'lucide-vue-next'
 import { useTheme } from '../../composables/useTheme'
 
-const { isDark, toggleTheme, initTheme } = useTheme()
-
-onMounted(() => {
-  initTheme()
-})
+const { isDark, toggleTheme } = useTheme()
 </script>
 
 <template>
   <button
     @click="toggleTheme"
     type="button"
-    aria-label="Toggle Theme"
-    class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer flex items-center justify-center"
+    role="switch"
+    :aria-checked="isDark"
     :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+    aria-label="Toggle theme"
+    class="relative inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200/90 bg-white/80 text-slate-600 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:border-blue-500/60 dark:hover:bg-blue-950/50 dark:hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
   >
-    <Sun v-if="isDark" class="w-5 h-5 text-amber-400 stroke-[2.2]" />
-    <Moon v-else class="w-5 h-5 text-slate-600 stroke-[2.2]" />
+    <Sun v-if="!isDark" class="h-4.5 w-4.5 text-amber-500 transition-transform duration-300" />
+    <Moon v-else class="h-4.5 w-4.5 text-sky-400 transition-transform duration-300" />
   </button>
 </template>
+
