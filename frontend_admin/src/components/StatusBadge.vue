@@ -7,22 +7,22 @@ const props = defineProps({
 })
 
 const defaultMap = {
-  active: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  published: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  verified: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  draft: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
-  pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  closed: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  expired: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  suspended: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  rejected: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  in_review: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  hired: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  shortlisted: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
-  admin: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-  hr: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  company: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30',
-  user: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+  active: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+  published: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+  verified: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+  draft: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30',
+  pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+  closed: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
+  expired: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
+  suspended: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
+  rejected: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
+  in_review: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
+  hired: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+  shortlisted: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
+  admin: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
+  hr: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
+  company: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
+  user: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
 }
 
 const toneMap = {
@@ -31,7 +31,7 @@ const toneMap = {
 
 const classes = computed(() => {
   const map = toneMap[props.type] || defaultMap
-  return map[String(props.value).toLowerCase()] || 'bg-slate-500/15 text-slate-300 border-slate-600/40'
+  return map[String(props.value).toLowerCase()] || 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-400/40 dark:border-slate-600/40'
 })
 </script>
 

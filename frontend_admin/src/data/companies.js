@@ -24,6 +24,8 @@ export const sampleCompanies = [
     active_openings: 12,
     coverGradient: gradientSeed[0],
     logoGradient: gradientSeed[0],
+    cover_image: '/companies/cover-1.jpg',
+    logo: '/companies/logo-1.jpg',
   },
   {
     id: 2,
@@ -41,6 +43,8 @@ export const sampleCompanies = [
     active_openings: 8,
     coverGradient: gradientSeed[1],
     logoGradient: gradientSeed[1],
+    cover_image: '/companies/cover-2.jpg',
+    logo: '/companies/logo-2.jpg',
   },
   {
     id: 3,
@@ -58,6 +62,8 @@ export const sampleCompanies = [
     active_openings: 3,
     coverGradient: gradientSeed[2],
     logoGradient: gradientSeed[2],
+    cover_image: '/companies/cover-3.jpg',
+    logo: '/companies/logo-3.jpg',
   },
   {
     id: 4,
@@ -75,6 +81,8 @@ export const sampleCompanies = [
     active_openings: 15,
     coverGradient: gradientSeed[3],
     logoGradient: gradientSeed[3],
+    cover_image: '/companies/cover-4.jpg',
+    logo: '/companies/logo-4.jpg',
   },
   {
     id: 5,
@@ -92,6 +100,8 @@ export const sampleCompanies = [
     active_openings: 0,
     coverGradient: gradientSeed[4],
     logoGradient: gradientSeed[4],
+    cover_image: '/companies/cover-5.jpg',
+    logo: '/companies/logo-5.jpg',
   },
   {
     id: 6,
@@ -109,6 +119,8 @@ export const sampleCompanies = [
     active_openings: 6,
     coverGradient: gradientSeed[5],
     logoGradient: gradientSeed[5],
+    cover_image: '/companies/cover-6.jpg',
+    logo: '/companies/logo-6.jpg',
   },
 ]
 

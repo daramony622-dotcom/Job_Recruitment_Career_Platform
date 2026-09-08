@@ -10,13 +10,10 @@ import {
   ArrowLeft,
   Briefcase,
   BadgeCheck,
-  Mail,
-  Phone,
-  Layers,
+  ShieldCheck,
   CircleDot,
 } from 'lucide-vue-next'
 import { sampleCompanies } from '../data/companies'
-import StatusBadge from '../components/StatusBadge.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,145 +22,219 @@ const company = computed(() =>
   sampleCompanies.find((c) => c.id === Number(route.params.id)),
 )
 
-const stats = computed(() => [
+const statusMeta = {
+  Active: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
+  Pending: { dot: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
+  Suspended: { dot: 'bg-rose-500', text: 'text-rose-600 dark:text-rose-400' },
+}
+
+const status = computed(() => statusMeta[company.value?.status] || statusMeta.Active)
+
+const detailCards = computed(() => [
   {
-    label: 'Active Openings',
-    value: company.value?.active_openings ?? 0,
-    icon: Briefcase,
-    iconClass: 'bg-blue-500/15 text-blue-400',
-  },
-  {
-    label: 'Team Size',
+    label: 'Company Size',
     value: company.value?.company_size ?? '—',
+    sub: 'Employees',
     icon: Users,
     iconClass: 'bg-indigo-500/15 text-indigo-400',
   },
   {
-    label: 'Founded',
+    label: 'Founded Year',
     value: company.value?.founded_year ?? '—',
+    sub: 'Established',
     icon: CalendarDays,
     iconClass: 'bg-amber-500/15 text-amber-400',
   },
   {
-    label: 'Employees',
-    value: `${company.value?.company_size ?? '—'}`,
-    icon: Layers,
-    iconClass: 'bg-emerald-500/15 text-emerald-400',
+    label: 'Open Positions',
+    value: company.value?.active_openings ?? 0,
+    sub: (company.value?.active_openings ?? 0) > 0 ? 'Roles Hiring now' : 'No openings',
+    pill: (company.value?.active_openings ?? 0) > 0,
+    icon: Briefcase,
+    iconClass: 'bg-blue-500/15 text-blue-400',
+  },
+  {
+    label: 'Status',
+    value: company.value?.is_verified ? 'Approved' : company.value?.status ?? '—',
+    sub: company.value?.is_verified ? 'Verified Platform Employer' : 'Awaiting verification',
+    icon: ShieldCheck,
+    iconClass: company.value?.is_verified
+      ? 'bg-emerald-500/15 text-emerald-400'
+      : 'bg-slate-500/15 text-slate-400',
   },
 ])
 </script>
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto" v-if="company">
+    <!-- Back navigation -->
     <button
-      class="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-100 mb-6 transition-colors group"
+      class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mb-6 transition-colors group"
       @click="router.push('/companies')"
     >
       <ArrowLeft class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-      Back to Companies
+      Back to Companies Directory
     </button>
 
-    <!-- ===== Header / Profile Card ===== -->
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+    <!-- ===== Cover banner (real cover photo + dark overlay) ===== -->
+    <div class="relative h-52 sm:h-64 lg:h-72 rounded-3xl overflow-hidden shadow-md">
+      <img
+        v-if="company.cover_image"
+        :src="company.cover_image"
+        :alt="`${company.name} cover`"
+        class="w-full h-full object-cover"
+      />
       <div
-        class="h-36 sm:h-44 relative"
+        v-else
+        class="w-full h-full"
         :style="{ background: company.coverGradient }"
-      >
-        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent"></div>
+      ></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/5"></div>
+      <!-- Verified Company Profile badge -->
+      <div class="absolute top-4 right-4 z-20">
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow-lg backdrop-blur-sm">
+          <ShieldCheck class="w-4 h-4" />
+          VERIFIED COMPANY PROFILE
+        </span>
       </div>
+    </div>
 
-      <div class="px-5 sm:px-8 py-7 sm:py-8">
-        <!-- Identity header (sits cleanly below the banner) -->
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+    <!-- ===== Floating profile card (overlaps banner) ===== -->
+    <div class="relative -mt-20 sm:-mt-24 z-10 mx-4 sm:mx-8">
+      <div
+        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl p-6 sm:p-8"
+      >
+        <div class="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
+          <!-- Company logo -->
           <div
-            class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-3xl sm:text-4xl font-black text-white overflow-hidden shrink-0 shadow-lg"
-            :style="{ background: company.logoGradient }"
+            class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 overflow-hidden shadow-lg flex items-center justify-center text-3xl sm:text-4xl font-black text-white"
           >
-            {{ company.name.charAt(0) }}
+            <img
+              v-if="company.logo"
+              :src="company.logo"
+              :alt="company.name"
+              class="w-full h-full object-cover"
+            />
+            <template v-else>
+              <div class="w-full h-full flex items-center justify-center" :style="{ background: company.logoGradient }">
+                {{ company.name.charAt(0) }}
+              </div>
+            </template>
           </div>
 
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2.5">
-              <h2 class="text-2xl sm:text-3xl font-bold text-slate-50 truncate">{{ company.name }}</h2>
-              <StatusBadge :value="company.status" />
+              <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white truncate">
+                {{ company.name }}
+              </h2>
               <span
                 v-if="company.is_verified"
-                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
               >
-                <BadgeCheck class="w-3.5 h-3.5" /> Verified
+                <BadgeCheck class="w-3.5 h-3.5" /> Verified Platform Employer
               </span>
             </div>
-            <p class="text-blue-400 font-medium mt-1.5">{{ company.industry }}</p>
-            <p class="text-sm text-slate-400 mt-1 inline-flex items-center gap-1.5">
+            <p class="text-blue-600 dark:text-blue-400 font-medium mt-1.5">{{ company.industry }}</p>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 inline-flex items-center gap-1.5">
               <MapPin class="w-3.5 h-3.5" />
               {{ company.city }}, {{ company.country }}
             </p>
           </div>
-        </div>
 
-        <!-- Description -->
-        <p class="mt-7 text-slate-300 leading-relaxed max-w-3xl text-[15px]">
-          {{ company.description }}
-        </p>
-
-        <!-- Quick contact / facts -->
-        <div class="mt-7 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+          <!-- Website CTA -->
           <a
             :href="company.website"
             target="_blank"
             rel="noopener"
-            class="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-800 hover:border-blue-600/60 hover:bg-slate-800 transition-colors"
+            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shrink-0"
           >
-            <Globe class="w-4 h-4 text-blue-400 shrink-0" />
-            <span class="text-slate-300 truncate">{{ company.website }}</span>
+            <Globe class="w-4 h-4" />
+            Visit Company Website
           </a>
-          <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-800">
-            <Mail class="w-4 h-4 text-slate-500 shrink-0" />
-            <span class="text-slate-300 truncate">{{ company.email || 'Not provided' }}</span>
+        </div>
+
+        <!-- Description -->
+        <p class="mt-6 text-slate-700 dark:text-slate-300 leading-relaxed text-[15px] max-w-3xl">
+          {{ company.description }}
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== Metric cards (4-column grid) ===== -->
+    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        v-for="card in detailCards"
+        :key="card.label"
+        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-start gap-3.5 hover:border-blue-600/60 hover:shadow-lg hover:shadow-blue-900/20 transition-all"
+      >
+        <div
+          class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+          :class="card.iconClass"
+        >
+          <component :is="card.icon" class="w-5 h-5" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
+            {{ card.label }}
+          </p>
+          <div class="flex items-center gap-2 mt-1 flex-wrap">
+            <p class="text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{{ card.value }}</p>
+            <span
+              v-if="card.pill"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+            >
+              <CircleDot class="w-3 h-3" /> Hiring now
+            </span>
           </div>
-          <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-800">
-            <Phone class="w-4 h-4 text-slate-500 shrink-0" />
-            <span class="text-slate-300 truncate">{{ company.phone || 'Not provided' }}</span>
-          </div>
-          <div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-800">
-            <Building2 class="w-4 h-4 text-slate-500 shrink-0" />
-            <span class="text-slate-300 truncate">{{ company.company_size }} employees</span>
-          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{{ card.sub }}</p>
         </div>
       </div>
     </div>
 
-    <!-- ===== Stats Row ===== -->
-    <div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <div
-        v-for="stat in stats"
-        :key="stat.label"
-        class="flex items-center gap-4 p-5 rounded-2xl bg-slate-900 border border-slate-800"
-      >
-        <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" :class="stat.iconClass">
-          <component :is="stat.icon" class="w-5 h-5" />
-        </div>
-        <div class="min-w-0">
-          <p class="text-2xl font-bold text-slate-50 truncate">{{ stat.value }}</p>
-          <p class="text-xs text-slate-400 mt-0.5 truncate">{{ stat.label }}</p>
+    <!-- ===== Status verification strip ===== -->
+    <div
+      class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 px-5 py-4"
+      :class="company.is_verified ? 'bg-emerald-500/5' : 'bg-amber-500/5'"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          class="w-10 h-10 rounded-xl flex items-center justify-center"
+          :class="company.is_verified ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'"
+        >
+          <ShieldCheck class="w-5 h-5" />
+        </span>
+        <div>
+          <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            {{ company.is_verified ? 'Approved Platform Employer' : 'Verification pending' }}
+          </p>
+          <p class="text-xs text-slate-600 dark:text-slate-400">
+            {{ company.is_verified ? 'This company is verified by the recruitment platform.' : 'This company profile has not been verified yet.' }}
+          </p>
         </div>
       </div>
+      <span
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+        :class="status.text"
+      >
+        <span class="w-2 h-2 rounded-full" :class="status.dot"></span>
+        {{ company.status }}
+      </span>
     </div>
 
     <!-- ===== Active Openings Section ===== -->
-    <div class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8">
+    <div class="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8">
       <div class="flex items-center justify-between mb-6">
         <div>
-          <h3 class="text-lg font-bold text-slate-50 flex items-center gap-2.5">
-            <Briefcase class="w-5 h-5 text-blue-400" />
+          <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2.5">
+            <Briefcase class="w-5 h-5 text-blue-600 dark:text-blue-400" />
             Active Openings
           </h3>
-          <p class="text-sm text-slate-400 mt-1">
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
             Current job openings listed for this company.
           </p>
         </div>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold">
-          <CircleDot class="w-4 h-4" />
+          <Building2 class="w-4 h-4" />
           {{ company.active_openings }} Openings
         </span>
       </div>
@@ -172,38 +243,38 @@ const stats = computed(() => [
         <div
           v-for="n in company.active_openings"
           :key="n"
-          class="group bg-slate-800/50 border border-slate-800 rounded-xl p-5 hover:border-blue-600/50 transition-colors"
+          class="group bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-xl p-5 hover:border-blue-600/50 transition-colors"
         >
           <div class="flex items-start justify-between gap-3">
-            <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-              <Briefcase class="w-4 h-4 text-blue-400" />
+            <div class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center shrink-0">
+              <Briefcase class="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
             <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">#{{ n }}</span>
           </div>
-          <p class="mt-4 text-sm font-semibold text-slate-200">
+          <p class="mt-4 text-sm font-semibold text-slate-800 dark:text-slate-200">
             Open Position {{ n }}
           </p>
-          <p class="mt-1 text-xs text-slate-400">
+          <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">
             {{ company.industry }}
           </p>
-          <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
             <span>Apply now</span>
-            <span class="text-blue-400 group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1">
+            <span class="text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1">
               <CircleDot class="w-3 h-3" /> Active
             </span>
           </div>
         </div>
       </div>
 
-      <div v-else class="text-center py-12 text-slate-500 bg-slate-800/30 rounded-xl border border-dashed border-slate-700">
-        <CircleDot class="w-10 h-10 mx-auto mb-3 opacity-50" />
-        <p class="font-medium text-slate-300">No active openings</p>
+      <div v-else class="text-center py-12 text-slate-500 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+        <Building2 class="w-10 h-10 mx-auto mb-3 opacity-50" />
+        <p class="font-medium text-slate-700 dark:text-slate-300">No active openings</p>
         <p class="text-sm mt-1">There are currently no job openings for this company.</p>
       </div>
     </div>
   </div>
 
-  <div v-else class="p-8 text-center text-slate-400">
+  <div v-else class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto text-center text-slate-600 dark:text-slate-400">
     Company not found.
   </div>
 </template>
