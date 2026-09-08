@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 
 // Profile
 Route::get('profile', [ProfileController::class, 'show']);
+Route::post('profile/avatar', [ProfileController::class, 'updateAvatar']);
 Route::post('profile', [ProfileController::class, 'update']);
 Route::put('profile', [ProfileController::class, 'update']);
 
@@ -34,6 +35,8 @@ Route::apiResource('experience', ExperienceController::class);
 Route::get('skills', [SkillController::class, 'index']);
 Route::get('skills/mine', [SkillController::class, 'mySkills']);
 Route::put('skills/mine', [SkillController::class, 'updateMySkills']);
+Route::post('skills/custom', [SkillController::class, 'storeCustomSkill']);
+Route::delete('skills/custom/{name}', [SkillController::class, 'destroyCustomSkill']);
 
 // CV management
 Route::apiResource('cv', CVController::class)->only([

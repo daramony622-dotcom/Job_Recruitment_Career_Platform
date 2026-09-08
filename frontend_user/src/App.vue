@@ -2,14 +2,13 @@
 import { onMounted } from 'vue'
 import { initTheme } from './composables/useTheme'
 import { useAuth } from './composables/useAuth'
-import { ensureGoogleTranslate } from './composables/useGoogleTranslate'
 
-const { fetchCurrentUser } = useAuth()
+const { fetchCurrentUser, fetchProfileAvatar } = useAuth()
 
 onMounted(() => {
   initTheme()
   fetchCurrentUser()
-  ensureGoogleTranslate()
+  fetchProfileAvatar()
 })
 </script>
 

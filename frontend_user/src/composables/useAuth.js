@@ -1,12 +1,20 @@
 import { computed, ref } from 'vue'
 
 const BaseURL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
-const API_URL = BaseURL.endsWith('/') ? BaseURL.slice(0, -1) : BaseURL
+export const API_URL = BaseURL.endsWith('/') ? BaseURL.slice(0, -1) : BaseURL
+
+export const resolveAssetUrl = (path) => {
+  if (!path || /^(https?:|blob:|data:)/i.test(path)) return path || ''
+
+  const origin = API_URL.replace(/\/api\/?$/, '')
+  return `${origin}/${path.replace(/^\/+/, '')}`
+}
 
 const TOKEN_KEY = 'job_platform_token'
 
 const token = ref(localStorage.getItem(TOKEN_KEY))
 const user = ref(null)
+const profileAvatar = ref('')
 const isLoading = ref(false)
 const error = ref('')
 
@@ -62,6 +70,25 @@ const fetchCurrentUser = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const fetchProfileAvatar = async () => {
+  if (!token.value) {
+    profileAvatar.value = ''
+    return ''
+  }
+
+  try {
+    const profile = await request('/user/profile')
+    profileAvatar.value = resolveAssetUrl(profile?.avatar)
+    return profileAvatar.value
+  } catch {
+    return profileAvatar.value
+  }
+}
+
+const setProfileAvatar = (avatar) => {
+  profileAvatar.value = resolveAssetUrl(avatar)
 }
 
 const login = async (email, password) => {
@@ -149,17 +176,7 @@ const loginWithGoogle = async () => {
 }
 
 const loginWithTelegram = async () => {
-  try {
-    const data = await request('/auth/telegram?json=1')
-    if (data.callback_url && data.bot_name) {
-      // Open Telegram auth URL or bot
-      window.open(`https://t.me/${data.bot_name}`, '_blank')
-    } else {
-      window.location.href = `${API_URL}/auth/telegram`
-    }
-  } catch (err) {
-    window.location.href = `${API_URL}/auth/telegram`
-  }
+  window.location.href = `${API_URL}/auth/telegram`
 }
 
 const logout = async () => {
@@ -179,13 +196,23 @@ const logout = async () => {
 const handleOAuthCallback = () => {
   const urlParams = new URLSearchParams(window.location.search)
   const callbackToken = urlParams.get('token')
+  const callbackError = urlParams.get('oauth_error')
+
+  if (callbackError) {
+    error.value = callbackError
+    window.history.replaceState({}, document.title, window.location.pathname)
+    return false
+  }
+
   if (callbackToken) {
     token.value = callbackToken
     localStorage.setItem(TOKEN_KEY, callbackToken)
-    fetchCurrentUser()
     // Clean up query string
     window.history.replaceState({}, document.title, window.location.pathname)
+    return fetchCurrentUser()
   }
+
+  return null
 }
 
 export function useAuth() {
@@ -193,11 +220,14 @@ export function useAuth() {
     API_URL,
     token,
     user,
+      profileAvatar,
     isAuthenticated,
     isLoading,
     error,
     request,
     fetchCurrentUser,
+    fetchProfileAvatar,
+    setProfileAvatar,
     login,
     register,
     verifyOtp,

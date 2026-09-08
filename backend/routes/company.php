@@ -20,6 +20,7 @@ Route::get('profile', [CompanyProfileController::class, 'show']);
 Route::post('profile', [CompanyProfileController::class, 'store']);
 Route::put('profile', [CompanyProfileController::class, 'update']);
 
+
 // Routes requiring an associated company profile
 Route::middleware('has.company')->group(function () {
     // Job Posts

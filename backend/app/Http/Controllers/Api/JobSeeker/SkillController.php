@@ -65,4 +65,44 @@ class SkillController extends Controller
             'data'    => $user->skills()->get()
         ]);
     }
+
+    public function storeCustomSkill(Request $request)
+    {
+        $name = trim((string) $request->input('name'));
+        $request->merge(['name' => $name]);
+        $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+        ]);
+
+        $profile = $request->user()->profile;
+        abort_if(!$profile, 404, 'Profile not found.');
+
+        $customSkills = $profile->custom_skills ?? [];
+        if (!collect($customSkills)->contains(fn ($skill) => strcasecmp($skill, $name) === 0)) {
+            $customSkills[] = $name;
+            $profile->update(['custom_skills' => array_values($customSkills)]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $profile->fresh()->custom_skills ?? [],
+        ], 201);
+    }
+
+    public function destroyCustomSkill(Request $request, string $name)
+    {
+        $profile = $request->user()->profile;
+        abort_if(!$profile, 404, 'Profile not found.');
+
+        $customSkills = collect($profile->custom_skills ?? [])
+            ->reject(fn ($skill) => strcasecmp($skill, trim($name)) === 0)
+            ->values()
+            ->all();
+        $profile->update(['custom_skills' => $customSkills]);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $customSkills,
+        ]);
+    }
 }

@@ -7,11 +7,16 @@ export function useJobSeekerApi() {
   const api = (path, options = {}) => request(`/user${path}`, options)
 
   return {
-    getProfile: () => api('/profile'),
+    getProfile: () => api('/profile').then(unwrap),
+    updateAvatar: (file) => {
+      const formData = new FormData()
+      formData.append('avatar', file)
+      return api('/profile/avatar', { method: 'POST', body: formData }).then(unwrap)
+    },
     updateProfile: (payload) => api('/profile', {
       method: 'PUT',
       body: JSON.stringify(payload),
-    }),
+    }).then(unwrap),
 
     listEducation: () => api('/education'),
     createEducation: (payload) => api('/education', { method: 'POST', body: JSON.stringify(payload) }),
@@ -29,6 +34,11 @@ export function useJobSeekerApi() {
       method: 'PUT',
       body: JSON.stringify({ skill_ids: skillIds }),
     }),
+    addCustomSkill: (name) => api('/skills/custom', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+    removeCustomSkill: (name) => api(`/skills/custom/${encodeURIComponent(name)}`, { method: 'DELETE' }),
 
     listCvs: () => api('/cv'),
     getCv: (id) => api(`/cv/${id}`),

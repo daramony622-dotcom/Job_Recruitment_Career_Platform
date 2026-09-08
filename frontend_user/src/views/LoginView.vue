@@ -18,8 +18,11 @@ const isSubmitting = ref(false)
 const loginError = ref('')
 const { login, loginWithGoogle, loginWithTelegram, handleOAuthCallback } = useAuth()
 
-onMounted(() => {
-  handleOAuthCallback()
+onMounted(async () => {
+  const callbackUser = await handleOAuthCallback()
+  if (callbackUser) {
+    router.push('/profile')
+  }
 })
 
 const handleLogin = async () => {

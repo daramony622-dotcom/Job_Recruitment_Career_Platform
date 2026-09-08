@@ -77,7 +77,9 @@ const closeMenu = (event) => {
 }
 
 onMounted(() => {
-  ensureGoogleTranslate()
+  if (currentLang.value === 'km') {
+    ensureGoogleTranslate()
+  }
   document.addEventListener('click', closeMenu)
 })
 

@@ -1,8 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Navbar from '../components/layout/Navbar.vue'
 import Footer from '../components/layout/Footer.vue'
+import { useAuth, resolveAssetUrl } from '../composables/useAuth'
 import { 
   Search, MapPin, Building2, Globe, Mail, Phone, 
   Users, CheckCircle2, ShieldCheck, Calendar, ArrowRight,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-vue-next'
 
 const router = useRouter()
+const { request } = useAuth()
 
 const searchQuery = ref('')
 const selectedIndustry = ref('All')
@@ -28,107 +30,29 @@ const industries = [
 
 const companySizes = ['All', '1-10', '11-50', '51-200', '201-500', '501-1000', '1000+']
 
-const createCompany = async (companyData) => {
-  // Simulate an API call to create a new company
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newCompany = { id: Date.now(), ...companyData }
-      companies.value.push(newCompany)
-      resolve(newCompany)
-    }, 500)
-  })
+const companies = ref([])
+const isLoading = ref(true)
+const loadError = ref('')
+
+const loadCompanies = async () => {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    const response = await request('/companies')
+    companies.value = (response.data?.data || response.data || []).map((company) => ({
+      ...company,
+      logo: resolveAssetUrl(company.logo),
+      cover_image: resolveAssetUrl(company.cover_image),
+    }))
+  } catch (error) {
+    loadError.value = error.message || 'Unable to load companies.'
+  } finally {
+    isLoading.value = false
+  }
 }
 
-const companies = ref([
-  {
-    id: 1,
-    user_id: 10,
-    name: 'TechMatrix Global',
-    slug: 'techmatrix-global',
-    logo: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=150&h=150&fit=crop',
-    cover_image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80',
-    website: 'https://techmatrix.example.com',
-    email: 'careers@techmatrix.com',
-    phone: '+855 23 999 888',
-    description: 'TechMatrix Global is Cambodia’s premier software innovation hub, building scalable cloud platforms, mobile applications, and enterprise digital solutions for clients worldwide.',
-    industry: 'Software & IT',
-    company_size: '51-200',
-    founded_year: 2019,
-    country: 'Cambodia',
-    city: 'Phnom Penh',
-    address: 'Monivong Blvd, Khan Daun Penh',
-    status: 'approved',
-    is_verified: true,
-    verified_at: '2026-01-15T00:00:00Z',
-    open_jobs_count: 14
-  },
-  {
-    id: 2,
-    user_id: 12,
-    name: 'ABA Digital Tech',
-    slug: 'aba-digital-tech',
-    logo: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=150&h=150&fit=crop',
-    cover_image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
-    website: 'https://abadigital.example.com',
-    email: 'recruitment@abadigital.com.kh',
-    phone: '+855 23 225 333',
-    description: 'Premier digital banking and fintech institution transforming financial services in Southeast Asia with cutting-edge mobile apps, AI security, and micro-services.',
-    industry: 'Banking & Finance',
-    company_size: '1000+',
-    founded_year: 2012,
-    country: 'Cambodia',
-    city: 'Phnom Penh',
-    address: 'Preah Sihanouk Blvd, Khan Chamkarmon',
-    status: 'approved',
-    is_verified: true,
-    verified_at: '2025-11-20T00:00:00Z',
-    open_jobs_count: 28
-  },
-  {
-    id: 3,
-    user_id: 15,
-    name: 'CambodiaTech Solutions',
-    slug: 'cambodiatech-solutions',
-    logo: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=150&h=150&fit=crop',
-    cover_image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80',
-    website: 'https://cambodiatech.example.com',
-    email: 'hr@cambodiatech.com',
-    phone: '+855 12 444 555',
-    description: 'Full-service IT infrastructure, cybersecurity, network routing, and hardware managed services provider serving enterprise corporate clients.',
-    industry: 'Software & IT',
-    company_size: '11-50',
-    founded_year: 2021,
-    country: 'Cambodia',
-    city: 'Phnom Penh',
-    address: 'Street 315, Khan Toul Kork',
-    status: 'approved',
-    is_verified: false,
-    verified_at: null,
-    open_jobs_count: 6
-  },
-  {
-    id: 4,
-    user_id: 18,
-    name: 'Wing Bank Digital',
-    slug: 'wing-bank-digital',
-    logo: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=150&h=150&fit=crop',
-    cover_image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&auto=format&fit=crop&q=80',
-    website: 'https://wingbank.example.com',
-    email: 'jobs@wingbank.com.kh',
-    phone: '+855 23 999 999',
-    description: 'Wing Bank is Cambodia’s leading digital bank and mobile financial services provider, bringing secure digital banking to millions of individuals and businesses.',
-    industry: 'Banking & Finance',
-    company_size: '501-1000',
-    founded_year: 2009,
-    country: 'Cambodia',
-    city: 'Phnom Penh',
-    address: 'Monivong Blvd Tower',
-    status: 'approved',
-    is_verified: true,
-    verified_at: '2025-08-10T00:00:00Z',
-    open_jobs_count: 19
-  }
-])
+onMounted(loadCompanies)
 
 const filteredCompanies = computed(() => {
   return companies.value.filter(c => {
@@ -191,6 +115,8 @@ const goToCompanyDetail = (id) => {
           <div class="relative md:col-span-2">
             <Search class="w-4.5 h-4.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input 
+              id="company-search"
+              aria-label="Search companies"
               v-model="searchQuery"
               type="text"
               placeholder="Search company name, city, or keywords..."
@@ -210,6 +136,8 @@ const goToCompanyDetail = (id) => {
           <!-- Industry Filter with Clear Action / Reset Option -->
           <div class="relative">
             <select
+              id="company-industry"
+              aria-label="Filter by industry"
               v-model="selectedIndustry"
               class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 transition font-medium cursor-pointer"
             >
@@ -231,6 +159,8 @@ const goToCompanyDetail = (id) => {
           <!-- Company Size Filter with Clear Action / Reset Option -->
           <div class="relative">
             <select
+              id="company-size"
+              aria-label="Filter by company size"
               v-model="selectedSize"
               class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 transition font-medium cursor-pointer"
             >

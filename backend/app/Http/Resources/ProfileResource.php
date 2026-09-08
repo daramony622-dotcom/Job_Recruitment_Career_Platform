@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileResource extends JsonResource
 {
@@ -17,9 +18,12 @@ class ProfileResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'avatar' => $this->avatar,
+            'avatar' => $this->avatar && !filter_var($this->avatar, FILTER_VALIDATE_URL)
+                ? Storage::disk('public')->url($this->avatar)
+                : $this->avatar,
             'headline' => $this->headline,
             'bio' => $this->bio,
+            'custom_skills' => $this->custom_skills ?? [],
             'phone' => $this->phone,
             'date_of_birth' => $this->date_of_birth?->format('Y-m-d'),
             'gender' => $this->gender,

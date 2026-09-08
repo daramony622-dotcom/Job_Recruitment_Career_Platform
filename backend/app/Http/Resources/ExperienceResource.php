@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\UserResource;
 
 class ExperienceResource extends JsonResource
 {
@@ -16,7 +17,7 @@ class ExperienceResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'profile_id' => $this->profile_id,
+            'user_id' => $this->user_id,
             'job_title' => $this->job_title,
             'company_name' => $this->company_name,
             'location' => $this->location,
@@ -24,7 +25,7 @@ class ExperienceResource extends JsonResource
             'end_date' => $this->end_date?->format('Y-m-d'),
             'is_current' => (bool) $this->is_current,
             'description' => $this->description,
-            'profile' => new ProfileResource($this->whenLoaded('profile')),
+            'user' => new UserResource($this->whenLoaded('user')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

@@ -42,7 +42,7 @@ class GoogleAuthController extends Controller
      * Handle the callback from Google or verify a Google token directly.
      * GET|POST /api/auth/google/callback
      */
-    public function callback(Request $request): JsonResponse
+    public function callback(Request $request): JsonResponse|RedirectResponse
     {
         [$inputToken, $code, $validationError] = $this->resolveCredentials($request);
 
@@ -53,22 +53,23 @@ class GoogleAuthController extends Controller
         try {
             $googleUser = $this->exchangeGoogleUser($request, $inputToken, $code);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->responseForBrowserOrApi($request, [
                 'success' => false,
                 'message' => 'Google authentication failed: ' . $e->getMessage(),
             ], 401);
         }
 
         if (!$googleUser || !$googleUser->getEmail()) {
-            $response = response()->json([
+            $response = [
                 'success' => false,
                 'message' => 'Unable to retrieve valid Google user profile.',
-            ], 400);
+            ];
+            $status = 400;
         } else {
             $user = $this->findOrCreateUser($googleUser);
             $token = $user->createToken('google_auth_token')->plainTextToken;
 
-            $response = response()->json([
+            $response = [
                 'success' => true,
                 'message' => 'Authenticated via Google successfully.',
                 'data' => [
@@ -82,10 +83,24 @@ class GoogleAuthController extends Controller
                     ],
                     'token' => $token,
                 ],
-            ]);
+            ];
+            $status = 200;
         }
 
-        return $response;
+        return $this->responseForBrowserOrApi($request, $response, $status);
+    }
+
+    private function responseForBrowserOrApi(Request $request, array $payload, int $status): JsonResponse|RedirectResponse
+    {
+        if ($request->expectsJson() || $request->has('json')) {
+            return response()->json($payload, $status);
+        }
+
+        if (!($payload['success'] ?? false)) {
+            return redirect()->to(config('app.frontend_url') . '/login?oauth_error=' . urlencode($payload['message']));
+        }
+
+        return redirect()->to(config('app.frontend_url') . '/login?token=' . urlencode($payload['data']['token']));
     }
 
     private function resolveCredentials(Request $request): array

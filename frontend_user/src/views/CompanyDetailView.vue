@@ -1,9 +1,10 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Navbar from "../components/layout/Navbar.vue";
 import Footer from "../components/layout/Footer.vue";
 import JobCard from "../components/jobs/JobCard.vue";
+import { resolveAssetUrl, useAuth } from "../composables/useAuth";
 import {
   Building2,
   MapPin,
@@ -22,66 +23,43 @@ import {
 
 const route = useRoute();
 const router = useRouter();
+const { request } = useAuth();
+const isLoading = ref(true);
+const loadError = ref("");
 
-// Sample company profile matching schema
 const company = ref({
-  id: route.params.id || 1,
-  user_id: 10,
-  name: "TechMatrix Global",
-  slug: "techmatrix-global",
-  logo: "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=150&h=150&fit=crop",
-  cover_image:
-    "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&auto=format&fit=crop&q=80",
-  website: "https://techmatrix.example.com",
-  email: "careers@techmatrix.com",
-  phone: "+855 23 999 888",
-  description: `TechMatrix Global is a leading software innovation and digital transformation company headquartered in Phnom Penh, Cambodia. We specialize in building enterprise cloud architectures, high-performance mobile applications, and micro-services for financial, e-commerce, and logistics industries.
-
-Founded in 2019, our mission is to empower Southeast Asian organizations with top-tier technology and engineering excellence. We champion modern tech stacks including Vue.js, Laravel, Flutter, Kubernetes, and AWS Cloud Infrastructure.`,
-  industry: "Software & Information Technology",
-  company_size: "51-200",
-  founded_year: 2019,
-  country: "Cambodia",
-  city: "Phnom Penh",
-  address: "Monivong Blvd, Khan Daun Penh",
-  status: "approved",
-  is_verified: true,
-  verified_at: "2026-01-15T00:00:00Z",
-  open_jobs_count: 3,
+  id: route.params.id,
+  name: "",
 });
 
-// Sample open job posts for this company
-const companyJobs = ref([
-  {
-    id: 1,
-    company_id: 1,
-    category_id: 1,
-    category_name: "Software Engineering",
-    company_name: "TechMatrix Global",
-    company_logo:
-      "https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=150&h=150&fit=crop",
-    title: "Senior Full Stack Laravel & Vue.js Developer",
-    slug: "senior-full-stack-laravel-vue-developer",
-    description:
-      "We are seeking an experienced Senior Full Stack Developer proficient in Laravel 11 and Vue 3...",
-    job_type: "full_time",
-    work_mode: "hybrid",
-    experience_level: "senior",
-    location: "Monivong Blvd",
-    city: "Phnom Penh",
-    country: "Cambodia",
-    salary_min: 1200.0,
-    salary_max: 2200.0,
-    salary_currency: "USD",
-    salary_period: "monthly",
-    is_salary_visible: true,
-    vacancies: 3,
-    deadline: "2026-04-30",
-    status: "published",
-    is_featured: true,
-    views_count: 542,
-  },
-]);
+const companyJobs = ref([]);
+
+const loadCompany = async () => {
+  isLoading.value = true;
+  loadError.value = "";
+
+  try {
+    const response = await request(`/companies/${route.params.id}`);
+    const data = response.data || response;
+    company.value = {
+      ...data,
+      logo: resolveAssetUrl(data.logo),
+      cover_image: resolveAssetUrl(data.cover_image),
+    };
+    companyJobs.value = (data.jobs?.data || data.jobs || []).map((job) => ({
+      ...job,
+      category_name: job.category?.name,
+      company_name: data.name,
+      company_logo: resolveAssetUrl(data.logo),
+    }));
+  } catch (error) {
+    loadError.value = error.message || "Unable to load this company.";
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(loadCompany);
 </script>
 
 <template>

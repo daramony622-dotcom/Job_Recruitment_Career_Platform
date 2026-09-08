@@ -9,6 +9,7 @@
 <body class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
 
     @php $tab = request('tab', 'login'); @endphp
+    @php $errors = $errors ?? new \Illuminate\Support\MessageBag(); @endphp
 
     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm w-full max-w-md p-8">
 
@@ -30,14 +31,14 @@
 
         {{-- ── Tab switcher ─────────────────────────────────────────────────── --}}
         <div class="flex bg-gray-100 rounded-lg p-1 mb-6 gap-1">
-            <a href="{{ route('login') }}"
+            <a href="{{ config('app.frontend_url') }}/login"
                class="flex-1 py-2 text-center text-sm font-medium rounded-md transition
                       {{ $tab === 'login'
                           ? 'bg-white border border-gray-200 text-gray-900 shadow-sm'
                           : 'text-gray-500 hover:text-gray-700' }}">
                 Login
             </a>
-            <a href="{{ route('login', ['tab' => 'register']) }}"
+            <a href="{{ config('app.frontend_url') }}/register"
                class="flex-1 py-2 text-center text-sm font-medium rounded-md transition
                       {{ $tab === 'register'
                           ? 'bg-white border border-gray-200 text-gray-900 shadow-sm'
@@ -67,7 +68,7 @@
         ════════════════════════════════════════════════════════════════════ --}}
         @if ($tab === 'login')
 
-            <form method="POST" action="{{ route('login') }}" novalidate>
+            <form method="POST" action="{{ config('app.frontend_url') }}/login" novalidate>
                 @csrf
 
                 {{-- Email --}}
@@ -122,7 +123,7 @@
 
                 {{-- Forgot password --}}
                 <div class="text-right mb-5">
-                    <a href="{{ route('password.request') }}"
+                    <a href="{{ config('app.frontend_url') }}/forgot-password"
                     class="text-sm text-blue-600 hover:underline">
                         Forgot password?
                     </a>
@@ -141,7 +142,7 @@
         ════════════════════════════════════════════════════════════════════ --}}
         @else
 
-            <form method="POST" action="{{ route('register') }}" novalidate>
+            <form method="POST" action="{{ config('app.frontend_url') }}/register" novalidate>
                 @csrf
 
                 {{-- First + Last name --}}
@@ -323,11 +324,11 @@
         <p class="text-center text-sm text-gray-500 mt-5">
             @if ($tab === 'login')
                 No account yet?
-                <a href="{{ route('login', ['tab' => 'register']) }}"
+                <a href="{{ config('app.frontend_url') }}/register"
                    class="text-blue-600 font-semibold hover:underline">Register</a>
             @else
                 Already have an account?
-                <a href="{{ route('login') }}"
+                <a href="{{ config('app.frontend_url') }}/login"
                    class="text-blue-600 font-semibold hover:underline">Login</a>
             @endif
         </p>

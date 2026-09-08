@@ -1,12 +1,12 @@
 import { ref } from 'vue'
 
-const currentLang = ref('en')
-
 let widgetInitialized = false
 let initializationStarted = false
 let initializationPromise = null
 
 function readGoogleLanguage() {
+  if (typeof document === 'undefined') return 'en'
+
   const match = document.cookie.match(/(?:^|;\s*)googtrans=([^;]+)/)
 
   if (!match) {
@@ -18,8 +18,11 @@ function readGoogleLanguage() {
   return language && language !== 'en' ? language : 'en'
 }
 
+const currentLang = ref(readGoogleLanguage())
+
 function syncCurrentLanguage() {
   currentLang.value = readGoogleLanguage()
+  document.documentElement.lang = currentLang.value === 'km' ? 'km' : 'en'
 }
 
 function initializeWidget() {
@@ -93,6 +96,7 @@ export function ensureGoogleTranslate() {
 export function setGoogleLanguage(language) {
   const targetLanguage = language === 'km' ? 'km' : 'en'
   currentLang.value = targetLanguage
+  document.documentElement.lang = targetLanguage
 
   const selectLanguage = (attempt = 0) => {
     const select = document.querySelector('.goog-te-combo')

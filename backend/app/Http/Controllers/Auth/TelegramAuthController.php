@@ -20,7 +20,7 @@ class TelegramAuthController extends Controller
         $botName  = config('services.telegram.bot_name', 'MyAppBot');
         $callback = route('auth.telegram.callback');
 
-        if ($request->wantsJson() || $request->has('json') || $request->is('api/*')) {
+        if ($request->wantsJson() || $request->has('json')) {
             return response()->json([
                 'success'      => true,
                 'bot_name'     => $botName,
@@ -31,7 +31,7 @@ class TelegramAuthController extends Controller
         return response()->view('telegram.login');
     }
 
-    public function login(Request $request): JsonResponse
+    public function login(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
     {
         // ── Step 1: Basic field validation ────────────────────────────────────
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
@@ -46,7 +46,7 @@ class TelegramAuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
+            return $this->responseForBrowserOrApi($request, [
                 'success' => false,
                 'message' => 'Missing Telegram authentication parameters. When testing via Telegram Widget or API, id, first_name, auth_date, and hash must be provided.',
                 'errors'  => $validator->errors(),
@@ -70,14 +70,14 @@ class TelegramAuthController extends Controller
                 'telegram_id' => $data['id'] ?? null,
             ]);
 
-            return response()->json([
+            return $this->responseForBrowserOrApi($request, [
                 'message' => 'Invalid Telegram authentication data.',
             ], 401);
         }
 
         // ── Step 3: Reject stale data (replay attack protection) ──────────────
         if ((time() - (int) $data['auth_date']) > 86400) {
-            return response()->json([
+            return $this->responseForBrowserOrApi($request, [
                 'message' => 'Telegram session has expired. Please try again.',
             ], 401);
         }
@@ -98,7 +98,8 @@ class TelegramAuthController extends Controller
         ]);
 
         // ── Step 6: Return response ───────────────────────────────────────────
-        return response()->json([
+        return $this->responseForBrowserOrApi($request, [
+            'success'      => true,
             'token'       => $token,
             'token_type'  => 'Bearer',
             'is_new_user' => $isNewUser,  // frontend can show "Welcome!" for new users
@@ -114,6 +115,19 @@ class TelegramAuthController extends Controller
                 'has_email'        => ! is_null($user->email),
             ],
         ], $isNewUser ? 201 : 200);
+    }
+
+    private function responseForBrowserOrApi(Request $request, array $payload, int $status): JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        if ($request->expectsJson() || $request->has('json')) {
+            return response()->json($payload, $status);
+        }
+
+        if (!($payload['success'] ?? false)) {
+            return redirect()->to(config('app.frontend_url') . '/login?oauth_error=' . urlencode($payload['message'] ?? 'Telegram authentication failed.'));
+        }
+
+        return redirect()->to(config('app.frontend_url') . '/login?token=' . urlencode($payload['token']));
     }
 
     /**

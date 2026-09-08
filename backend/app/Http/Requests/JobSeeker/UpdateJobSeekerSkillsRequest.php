@@ -23,7 +23,7 @@ class UpdateJobSeekerSkillsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'skill_ids' => ['required', 'array'],
+            'skill_ids' => ['present', 'array'],
             'skill_ids.*' => ['integer', 'exists:skills,id'],
         ];
     }

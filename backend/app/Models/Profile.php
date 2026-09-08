@@ -14,6 +14,7 @@ class Profile extends Model
         'avatar',
         'headline',
         'bio',
+        'custom_skills',
         'phone',
         'date_of_birth',
         'gender',
@@ -44,6 +45,7 @@ class Profile extends Model
         'is_open_to_work' => 'boolean',
         'is_profile_visible' => 'boolean',
         'profile_views' => 'integer',
+        'custom_skills' => 'array',
     ];
 
     // -------------------------------------------------------------------------
