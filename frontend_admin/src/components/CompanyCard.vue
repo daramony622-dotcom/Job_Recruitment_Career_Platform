@@ -1,5 +1,13 @@
 <script setup>
-import { MapPin, Users, CalendarDays, Globe, Briefcase, ArrowRight, BadgeCheck } from 'lucide-vue-next'
+import {
+  MapPin,
+  Users,
+  CalendarDays,
+  Globe,
+  Briefcase,
+  ArrowRight,
+  BadgeCheck,
+} from 'lucide-vue-next'
 
 const props = defineProps({
   company: {
@@ -11,9 +19,9 @@ const props = defineProps({
 
 <template>
   <article
-    class="group bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-blue-600/60 hover:shadow-lg hover:shadow-blue-900/20 transition-all duration-300 flex flex-col"
+    class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden hover:border-blue-600/60 hover:shadow-lg hover:shadow-blue-900/20 transition-all duration-300 flex flex-col"
   >
-    <!-- Cover image -->
+    <!-- Banner cover image -->
     <div class="relative h-28 overflow-hidden">
       <img
         v-if="company.cover_image"
@@ -27,26 +35,20 @@ const props = defineProps({
         :style="{ background: company.coverGradient }"
       ></div>
 
-      <!-- Verified Employer badge -->
+      <!-- VERIFIED EMPLOYER badge (top right) -->
       <span
         v-if="company.is_verified"
-        class="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/90 text-white shadow"
+        class="absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-emerald-500 text-white shadow"
       >
         <BadgeCheck class="w-3.5 h-3.5" />
         Verified Employer
       </span>
-
-      <span
-        class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-900/80 backdrop-blur text-slate-200"
-      >
-        {{ company.status }}
-      </span>
     </div>
 
-    <!-- Logo -->
-    <div class="flex items-center justify-center">
+    <!-- Company logo overlapping banner + body -->
+    <div class="flex justify-center">
       <div
-        class="relative -mt-7 w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 overflow-hidden shadow group-hover:border-blue-500 transition-colors"
+        class="relative -mt-7 w-14 h-14 rounded-xl bg-slate-100 dark:bg-slate-800 ring-4 ring-white dark:ring-slate-900 overflow-hidden shadow-lg"
       >
         <img
           v-if="company.logo"
@@ -65,56 +67,65 @@ const props = defineProps({
     </div>
 
     <!-- Body -->
-    <div class="px-5 pb-5 flex flex-col flex-1">
-      <h3 class="mt-3 text-lg font-bold text-slate-100 text-center">{{ company.name }}</h3>
-      <p class="text-sm text-blue-400 text-center">{{ company.industry }}</p>
+    <div class="px-5 pb-4 flex flex-col flex-1 text-center">
+      <!-- Company name + verification checkmark -->
+      <h3 class="mt-2.5 text-lg font-bold text-slate-900 dark:text-slate-100 inline-flex items-center justify-center gap-1.5">
+        <span class="truncate">{{ company.name }}</span>
+        <BadgeCheck v-if="company.is_verified" class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+      </h3>
 
-      <p class="mt-3 text-sm text-slate-400 leading-relaxed line-clamp-2 text-center">
+      <!-- Industry category -->
+      <p class="text-sm text-blue-600 dark:text-blue-400 mt-0.5">{{ company.industry }}</p>
+
+      <!-- Description snippet -->
+      <p class="mt-3 text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
         {{ company.description }}
       </p>
 
-      <!-- Key details -->
-      <div class="mt-4 space-y-2.5 text-sm text-slate-300">
-        <p class="flex items-center gap-2.5">
+      <!-- Two-column info grid -->
+      <div class="mt-4 grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm text-left">
+        <p class="flex items-center gap-2 text-slate-700 dark:text-slate-300 min-w-0">
           <MapPin class="w-4 h-4 text-slate-500 shrink-0" />
-          <span>{{ company.city }}, {{ company.country }}</span>
+          <span class="truncate">{{ company.city }}, {{ company.country }}</span>
         </p>
-        <p class="flex items-center gap-2.5">
+        <p class="flex items-center gap-2 text-slate-700 dark:text-slate-300 min-w-0">
           <Users class="w-4 h-4 text-slate-500 shrink-0" />
-          <span>{{ company.company_size }} employees</span>
+          <span class="truncate">{{ company.company_size }}</span>
         </p>
-        <p class="flex items-center gap-2.5">
+        <p class="flex items-center gap-2 text-slate-700 dark:text-slate-300 min-w-0">
           <CalendarDays class="w-4 h-4 text-slate-500 shrink-0" />
-          <span>Founded {{ company.founded_year }}</span>
+          <span class="truncate">Founded {{ company.founded_year }}</span>
         </p>
-        <p class="flex items-center gap-2.5">
-          <Globe class="w-4 h-4 text-slate-500 shrink-0" />
-          <a :href="company.website" target="_blank" rel="noopener"
-             class="text-blue-400 hover:text-blue-300 hover:underline truncate">
-            {{ company.website }}
-          </a>
+        <a
+          v-if="company.website"
+          :href="company.website"
+          target="_blank"
+          rel="noopener"
+          class="flex items-center gap-2 text-blue-600 dark:text-blue-400 min-w-0 group/link"
+        >
+          <Globe class="w-4 h-4 shrink-0" />
+          <span class="truncate underline underline-offset-2 decoration-blue-500/40 group-hover/link:text-blue-700 dark:group-hover/link:text-blue-300">Website</span>
+        </a>
+        <p v-else class="flex items-center gap-2 text-slate-400 min-w-0">
+          <Globe class="w-4 h-4 shrink-0" />
+          <span class="truncate">Website</span>
         </p>
       </div>
+    </div>
 
-      <!-- Action buttons -->
-      <div class="mt-5 pt-4 border-t border-slate-800 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        <router-link
-          :to="`/companies/${company.id}`"
-          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
-        >
-          <Briefcase class="w-4 h-4" />
-          <span>Active Openings</span>
-          <span class="ml-auto bg-blue-500 rounded-full px-1.5 text-xs">{{ company.active_openings }}</span>
-        </router-link>
-
-        <router-link
-          :to="`/companies/${company.id}`"
-          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-700 text-slate-200 text-sm font-semibold hover:border-blue-500 hover:text-blue-400 hover:bg-slate-800 transition-colors"
-        >
-          <span>View Company Profile</span>
-          <ArrowRight class="w-4 h-4" />
-        </router-link>
-      </div>
+    <!-- Footer -->
+    <div class="mt-auto px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+      <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300">
+        <Briefcase class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+        {{ company.active_openings }} Openings
+      </span>
+      <router-link
+        :to="`/companies/${company.id}`"
+        class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors group/link"
+      >
+        <span>View Company Profile</span>
+        <ArrowRight class="w-4 h-4 transition-transform group-hover/link:translate-x-0.5" />
+      </router-link>
     </div>
   </article>
 </template>

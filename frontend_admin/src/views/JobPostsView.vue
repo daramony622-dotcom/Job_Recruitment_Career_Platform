@@ -249,11 +249,11 @@ onMounted(fetchJobPosts)
   <div class="p-4 sm:p-6 lg:p-8">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
       <div>
-        <h2 class="text-2xl font-bold text-slate-100 flex items-center gap-2">
-          <Briefcase class="w-6 h-6 text-blue-500" />
+        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <Briefcase class="w-6 h-6 text-blue-600 dark:text-blue-500" />
           Job Posts
         </h2>
-        <p class="text-sm text-slate-400 mt-1">{{ pagination.total }} job posts in total</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ pagination.total }} job posts in total</p>
       </div>
       <button
         @click="openModal"
@@ -265,20 +265,20 @@ onMounted(fetchJobPosts)
     </div>
 
     <div class="flex flex-col lg:flex-row gap-3 mb-6">
-      <div class="flex-1 flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 max-w-xl">
+      <div class="flex-1 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 max-w-xl">
         <Search class="w-4 h-4 text-slate-500" />
         <input
           v-model="filters.search"
           type="text"
           placeholder="Search by title, description, or company..."
-          class="bg-transparent outline-none text-sm text-slate-100 placeholder-slate-500 w-full"
+          class="bg-transparent outline-none text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 w-full"
         />
       </div>
 
       <div class="flex gap-3">
         <select
           v-model="filters.status"
-          class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-blue-500"
+          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
         >
           <option value="">All statuses</option>
           <option value="draft">Draft</option>
@@ -288,7 +288,7 @@ onMounted(fetchJobPosts)
         </select>
         <button
           @click="fetchJobPosts"
-          class="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-sm font-semibold hover:border-blue-500 hover:text-blue-400 transition-colors"
+          class="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           <RefreshCw class="w-4 h-4" />
           <span class="hidden sm:inline">Refresh</span>
@@ -296,14 +296,14 @@ onMounted(fetchJobPosts)
       </div>
     </div>
 
-    <p v-if="error" class="mb-4 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+    <p v-if="error" class="mb-4 text-sm text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
       {{ error }}
     </p>
 
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left">
-          <thead class="bg-slate-800/60 text-slate-400 text-xs uppercase border-b border-slate-800">
+          <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-xs uppercase border-b border-slate-200 dark:border-slate-800">
             <tr>
               <th class="px-5 py-3.5 font-semibold">Job Title</th>
               <th class="px-5 py-3.5 font-semibold">Company</th>
@@ -315,31 +315,31 @@ onMounted(fetchJobPosts)
               <th class="px-5 py-3.5 font-semibold text-right">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800">
-            <tr v-if="loading" class="hover:bg-slate-800/30">
-              <td colspan="8" class="px-5 py-10 text-center text-slate-400">Loading job posts...</td>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr v-if="loading" class="hover:bg-slate-100 dark:hover:bg-slate-800/30">
+              <td colspan="8" class="px-5 py-10 text-center text-slate-600 dark:text-slate-400">Loading job posts...</td>
             </tr>
-            <tr v-else-if="jobPosts.length === 0" class="hover:bg-slate-800/30">
-              <td colspan="8" class="px-5 py-10 text-center text-slate-400">No job posts found.</td>
+            <tr v-else-if="jobPosts.length === 0" class="hover:bg-slate-100 dark:hover:bg-slate-800/30">
+              <td colspan="8" class="px-5 py-10 text-center text-slate-600 dark:text-slate-400">No job posts found.</td>
             </tr>
             <tr
               v-for="job in jobPosts"
               :key="job.id"
-              class="hover:bg-slate-800/30 transition-colors"
+              class="hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors"
             >
               <td class="px-5 py-4">
-                <p class="font-semibold text-slate-100">{{ job.title }}</p>
+                <p class="font-semibold text-slate-900 dark:text-slate-100">{{ job.title }}</p>
                 <p class="text-xs text-slate-500 mt-0.5">{{ job.views_count }} views · {{ job.vacancies }} openings</p>
               </td>
-              <td class="px-5 py-4 text-slate-300">{{ job.company?.name || '—' }}</td>
-              <td class="px-5 py-4 text-slate-300">{{ job.city || job.location || '—' }}</td>
-              <td class="px-5 py-4 text-slate-300 capitalize">
+              <td class="px-5 py-4 text-slate-700 dark:text-slate-300">{{ job.company?.name || '—' }}</td>
+              <td class="px-5 py-4 text-slate-700 dark:text-slate-300">{{ job.city || job.location || '—' }}</td>
+              <td class="px-5 py-4 text-slate-700 dark:text-slate-300 capitalize">
                 {{ (job.job_type || '—').replace('_', ' ') }}
                 <span class="text-slate-500">·</span>
                 {{ (job.work_mode || '—').replace('_', ' ') }}
               </td>
-              <td class="px-5 py-4 text-slate-300">{{ job.category?.name || '—' }}</td>
-              <td class="px-5 py-4 text-slate-300">
+              <td class="px-5 py-4 text-slate-700 dark:text-slate-300">{{ job.category?.name || '—' }}</td>
+              <td class="px-5 py-4 text-slate-700 dark:text-slate-300">
                 <span v-if="job.salary_min">
                   {{ job.salary_currency }} {{ job.salary_min }}<span v-if="job.salary_max"> – {{ job.salary_max }}</span>
                 </span>
@@ -349,21 +349,21 @@ onMounted(fetchJobPosts)
               <td class="px-5 py-4">
                 <div class="flex items-center justify-end gap-1">
                   <button
-                    class="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors"
+                    class="p-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                     title="View"
                     @click="onView(job)"
                   >
                     <Eye class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-lg transition-colors"
+                    class="p-2 text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                     title="Edit"
                     @click="onEdit(job)"
                   >
                     <Pencil class="w-4 h-4" />
                   </button>
                   <button
-                    class="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                    class="p-2 text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                     title="Delete"
                     @click="onDelete(job)"
                   >
@@ -378,21 +378,21 @@ onMounted(fetchJobPosts)
 
       <div
         v-if="pagination.last_page > 1"
-        class="flex items-center justify-between px-5 py-3 border-t border-slate-800 bg-slate-900"
+        class="flex items-center justify-between px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
       >
         <p class="text-xs text-slate-500">
           Page {{ pagination.current_page }} of {{ pagination.last_page }}
         </p>
         <div class="flex items-center gap-2">
           <button
-            class="px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300 hover:border-blue-500 hover:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             :disabled="pagination.current_page <= 1"
             @click="goToPage(pagination.current_page - 1)"
           >
             Prev
           </button>
           <button
-            class="px-3 py-1.5 rounded-lg border border-slate-700 text-xs text-slate-300 hover:border-blue-500 hover:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             :disabled="pagination.current_page >= pagination.last_page"
             @click="goToPage(pagination.current_page + 1)"
           >
@@ -412,19 +412,19 @@ onMounted(fetchJobPosts)
         @click="closeModal"
       ></div>
 
-      <div class="relative bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <!-- Header -->
-        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-800 sticky top-0 bg-slate-900 z-10">
+        <div class="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
           <div>
-            <h3 class="text-lg font-bold text-slate-50 flex items-center gap-2">
-              <Briefcase class="w-5 h-5 text-blue-400" />
+            <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+              <Briefcase class="w-5 h-5 text-blue-600 dark:text-blue-400" />
               New Job Post
             </h3>
-            <p class="text-xs text-slate-400 mt-0.5">Create a new job post for any company.</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Create a new job post for any company.</p>
           </div>
           <button
             @click="closeModal"
-            class="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
+            class="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <X class="w-5 h-5" />
           </button>
@@ -432,35 +432,35 @@ onMounted(fetchJobPosts)
 
         <!-- Body -->
         <div class="px-6 py-5 space-y-5">
-          <p v-if="submitError" class="flex items-start gap-2 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
+          <p v-if="submitError" class="flex items-start gap-2 text-sm text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
             <AlertCircle class="w-4 h-4 mt-0.5 shrink-0" />
             <span>{{ submitError }}</span>
           </p>
-          <p v-if="submitSuccess" class="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3">
+          <p v-if="submitSuccess" class="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3">
             <CheckCircle2 class="w-4 h-4 shrink-0" />
             <span>{{ submitSuccess }}</span>
           </p>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">
-                Company <span class="text-rose-400">*</span>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Company <span class="text-rose-600 dark:text-rose-400">*</span>
               </label>
               <select
                 v-model="form.company_id"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
               >
                 <option value="" disabled>Select company</option>
                 <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">
-                Category <span class="text-rose-400">*</span>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Category <span class="text-rose-600 dark:text-rose-400">*</span>
               </label>
               <select
                 v-model="form.category_id"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
               >
                 <option value="" disabled>Select category</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -469,78 +469,78 @@ onMounted(fetchJobPosts)
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-slate-300 mb-1.5">
-              Job Title <span class="text-rose-400">*</span>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Job Title <span class="text-rose-600 dark:text-rose-400">*</span>
             </label>
             <input
               v-model="form.title"
               type="text"
               placeholder="e.g. Senior Frontend Developer"
-              class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
+              class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-slate-300 mb-1.5">
-              Description <span class="text-rose-400">*</span>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              Description <span class="text-rose-600 dark:text-rose-400">*</span>
             </label>
             <textarea
               v-model="form.description"
               rows="4"
               placeholder="Describe the role and responsibilities..."
-              class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 resize-none"
+              class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 resize-none"
             ></textarea>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Requirements</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Requirements</label>
               <textarea
                 v-model="form.requirements"
                 rows="3"
                 placeholder="Required skills and qualifications..."
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 resize-none"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 resize-none"
               ></textarea>
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Benefits</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Benefits</label>
               <textarea
                 v-model="form.benefits"
                 rows="3"
                 placeholder="Benefits and perks..."
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 resize-none"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500 resize-none"
               ></textarea>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">
-                Job Type <span class="text-rose-400">*</span>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Job Type <span class="text-rose-600 dark:text-rose-400">*</span>
               </label>
               <select
                 v-model="form.job_type"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 capitalize outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 capitalize outline-none focus:border-blue-500"
               >
                 <option v-for="t in jobTypes" :key="t" :value="t">{{ t.replace('_', ' ') }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">
-                Work Mode <span class="text-rose-400">*</span>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Work Mode <span class="text-rose-600 dark:text-rose-400">*</span>
               </label>
               <select
                 v-model="form.work_mode"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 capitalize outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 capitalize outline-none focus:border-blue-500"
               >
                 <option v-for="m in workModes" :key="m" :value="m">{{ m }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Experience Level</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Experience Level</label>
               <select
                 v-model="form.experience_level"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 capitalize outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 capitalize outline-none focus:border-blue-500"
               >
                 <option value="">Not specified</option>
                 <option v-for="el in experienceLevels" :key="el" :value="el">{{ el }}</option>
@@ -550,71 +550,71 @@ onMounted(fetchJobPosts)
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">
-                Location <span class="text-rose-400">*</span>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Location <span class="text-rose-600 dark:text-rose-400">*</span>
               </label>
               <input
                 v-model="form.location"
                 type="text"
                 placeholder="e.g. Phnom Penh"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Country</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Country</label>
               <input
                 v-model="form.country"
                 type="text"
                 placeholder="e.g. Cambodia"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">City</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">City</label>
               <input
                 v-model="form.city"
                 type="text"
                 placeholder="e.g. Phnom Penh"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Salary Min</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Salary Min</label>
               <input
                 v-model="form.salary_min"
                 type="number"
                 step="0.01"
                 placeholder="e.g. 1000"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Salary Max</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Salary Max</label>
               <input
                 v-model="form.salary_max"
                 type="number"
                 step="0.01"
                 placeholder="e.g. 3000"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 outline-none focus:border-blue-500"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Currency</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Currency</label>
               <select
                 v-model="form.salary_currency"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
               >
                 <option v-for="cur in currencies" :key="cur" :value="cur">{{ cur }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Period</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Period</label>
               <select
                 v-model="form.salary_period"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 capitalize outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 capitalize outline-none focus:border-blue-500"
               >
                 <option v-for="p in salaryPeriods" :key="p" :value="p">{{ p }}</option>
               </select>
@@ -623,39 +623,39 @@ onMounted(fetchJobPosts)
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Vacancies</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Vacancies</label>
               <input
                 v-model="form.vacancies"
                 type="number"
                 min="1"
                 max="100"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">Application Deadline</label>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Application Deadline</label>
               <input
                 v-model="form.deadline"
                 type="date"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1.5">
-                Status <span class="text-rose-400">*</span>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Status <span class="text-rose-600 dark:text-rose-400">*</span>
               </label>
               <select
                 v-model="form.status"
-                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 capitalize outline-none focus:border-blue-500"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 capitalize outline-none focus:border-blue-500"
               >
                 <option v-for="s in statuses" :key="s" :value="s">{{ s }}</option>
               </select>
             </div>
             <div class="flex items-end gap-6 pb-2">
-              <label class="flex items-center gap-2.5 text-sm text-slate-300 cursor-pointer">
+              <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                 <input
                   v-model="form.is_salary_visible"
                   type="checkbox"
@@ -663,7 +663,7 @@ onMounted(fetchJobPosts)
                 />
                 Salary visible
               </label>
-              <label class="flex items-center gap-2.5 text-sm text-slate-300 cursor-pointer">
+              <label class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
                 <input
                   v-model="form.is_featured"
                   type="checkbox"
@@ -676,7 +676,7 @@ onMounted(fetchJobPosts)
 
           <!-- Skills -->
           <div>
-            <label class="block text-sm font-medium text-slate-300 mb-1.5">Skills</label>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Skills</label>
             <div class="flex flex-wrap gap-2">
               <button
                 v-for="skill in skills"
@@ -685,7 +685,7 @@ onMounted(fetchJobPosts)
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
                 :class="selectedSkills.some((s) => s.id === skill.id)
                   ? 'bg-blue-600 border-blue-600 text-white'
-                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-blue-500 hover:text-blue-400'"
+                  : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400'"
                 @click="toggleSkill(skill)"
               >
                 {{ skill.name }}
@@ -696,12 +696,12 @@ onMounted(fetchJobPosts)
               <div
                 v-for="sel in selectedSkills"
                 :key="sel.id"
-                class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 border border-slate-700"
+                class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700"
               >
-                <span class="text-sm font-medium text-slate-200 flex-1">{{ sel.name }}</span>
+                <span class="text-sm font-medium text-slate-800 dark:text-slate-200 flex-1">{{ sel.name }}</span>
                 <select
                   v-model="sel.level"
-                  class="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 capitalize outline-none focus:border-blue-500"
+                  class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 dark:text-slate-200 capitalize outline-none focus:border-blue-500"
                 >
                   <option value="">Any level</option>
                   <option value="beginner">Beginner</option>
@@ -709,7 +709,7 @@ onMounted(fetchJobPosts)
                   <option value="advanced">Advanced</option>
                   <option value="expert">Expert</option>
                 </select>
-                <label class="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+                <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
                   <input
                     v-model="sel.is_required"
                     type="checkbox"
@@ -723,10 +723,10 @@ onMounted(fetchJobPosts)
         </div>
 
         <!-- Footer -->
-        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-800 sticky bottom-0 bg-slate-900">
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800 sticky bottom-0 bg-white dark:bg-slate-900">
           <button
             @click="closeModal"
-            class="px-4 py-2.5 rounded-xl border border-slate-700 text-sm font-semibold text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
+            class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:border-slate-400 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
             :disabled="submitting"
           >
             Cancel
