@@ -75,8 +75,10 @@ export function useJobSeekerApi() {
     },
     getInterview: (id) => api(`/interviews/${id}`),
 
-    listNotifications: (page = 1) => api(`/notifications?page=${page}`),
+    listNotifications: (page = 1) => api(`/notifications?page=${page}`).then((response) => response?.data?.data ?? response?.data ?? response),
     markNotificationRead: (id) => api(`/notifications/${id}/read`, { method: 'PATCH' }),
+    markAllNotificationsRead: () => api('/notifications/read-all', { method: 'POST' }),
+    deleteNotification: (id) => api(`/notifications/${id}`, { method: 'DELETE' }),
 
     unwrap,
   }

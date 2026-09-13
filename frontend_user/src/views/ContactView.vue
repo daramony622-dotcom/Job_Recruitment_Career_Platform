@@ -3,11 +3,19 @@ import { ref } from 'vue'
 import Navbar from '../components/layout/Navbar.vue'
 import Footer from '../components/layout/Footer.vue'
 import LanguageSwitcher from '../components/common/LanguageSwitcher.vue'
+import { useAuth } from '../composables/useAuth'
 import { 
   Mail, Phone, MapPin, Send, Clock, MessageSquare, 
   Building2, Globe, Compass, CheckCircle2, Sparkles,
-  HelpCircle, ShieldCheck, User, Tag, Navigation, ExternalLink
+  HelpCircle, ShieldCheck, User, Tag, Navigation, ExternalLink,
+  AlertCircle
 } from 'lucide-vue-next'
+
+const { API_URL, token } = useAuth()
+
+const requireLogin = () => {
+  window.location.href = `${import.meta.env.VITE_CLIENT_URL || 'http://localhost:5173'}/login?redirect=admin`
+}
 
 const name = ref('')
 const email = ref('')
@@ -17,6 +25,7 @@ const subject = ref('')
 const message = ref('')
 const isSubmitting = ref(false)
 const showSuccess = ref(false)
+const errorMessage = ref('')
 
 const etecMapUrl = 'https://www.google.com/maps/place/ETEC+Center/@11.5607285,104.8896902,16.36z/data=!4m6!3m5!1s0x310951adb4d4041d:0x8a90e729f62ad800!8m2!3d11.562212!4d104.8905721!16s%2Fg%2F11s8j5cd77?entry=ttu&g_ep=EgoyMDI2MDkwMi4wIKXMDSoASAFQAw%3D%3D'
 const etecEmbedUrl = 'https://maps.google.com/maps?q=11.562212,104.8905721&z=16&output=embed'
@@ -28,18 +37,49 @@ const inquiryTypes = [
   { id: 'tech', label: 'Technical Issue' }
 ]
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   isSubmitting.value = true
-  setTimeout(() => {
-    isSubmitting.value = false
+  errorMessage.value = ''
+  showSuccess.value = false
+  try {
+    if (!token.value) {
+      requireLogin()
+      return
+    }
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    }
+    headers['Authorization'] = `Bearer ${token.value}`
+    const response = await fetch(`${API_URL}/contact`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        name: name.value,
+        email: email.value,
+        phone: phone.value || null,
+        subject_type: subjectType.value,
+        subject: subject.value,
+        message: message.value,
+      }),
+    })
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data?.message || 'Failed to send message.')
+    }
     showSuccess.value = true
     name.value = ''
     email.value = ''
     phone.value = ''
     subject.value = ''
     message.value = ''
-    setTimeout(() => { showSuccess.value = false }, 4000)
-  }, 1000)
+    setTimeout(() => { showSuccess.value = false }, 6000)
+  } catch (err) {
+    errorMessage.value = err.message || 'Unable to submit your message. Please try again.'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const contactCards = [
@@ -148,6 +188,12 @@ const contactCards = [
           <div v-if="showSuccess" class="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
             <CheckCircle2 class="w-4.5 h-4.5 text-emerald-500 shrink-0" />
             <span>Thank you! Your message has been sent successfully to ETEC Center. We'll reply within 24 hours.</span>
+          </div>
+
+          <!-- Error Alert -->
+          <div v-if="errorMessage" class="p-4 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-xs font-bold text-rose-700 dark:text-rose-300 flex items-center gap-2">
+            <AlertCircle class="w-4.5 h-4.5 text-rose-500 shrink-0" />
+            <span>{{ errorMessage }}</span>
           </div>
 
           <form @submit.prevent="handleSubmit" class="space-y-4">

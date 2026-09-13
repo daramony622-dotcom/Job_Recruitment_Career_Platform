@@ -99,6 +99,7 @@ const editForm = reactive({
   email: '',
   role: 'user',
   is_active: true,
+  password: '',
 })
 
 function openEdit(c) {
@@ -107,6 +108,7 @@ function openEdit(c) {
   editForm.email = c.email || ''
   editForm.role = c.role || 'user'
   editForm.is_active = c.is_active !== false
+  editForm.password = ''
   editError.value = ''
   editSuccess.value = ''
   showEditModal.value = true
@@ -123,12 +125,17 @@ async function submitEdit() {
   editError.value = ''
   editSuccess.value = ''
   try {
-    const payload = {}
+    const payload = {
+      name: editForm.name,
+      email: editForm.email,
+      is_active: editForm.is_active,
+    }
     if (canManageRoles.value) payload.role = editForm.role
+    if (editForm.password) payload.password = editForm.password
     await adminApi.updateCandidate(editingCandidate.value.id, payload)
-    editSuccess.value = 'User role updated successfully.'
+    editSuccess.value = 'User updated successfully.'
     await fetchCandidates()
-    setTimeout(closeEditModal, 1000)
+    setTimeout(closeEditModal, 1200)
   } catch (e) {
     const err = e.response?.data
     if (err && err.errors) {
@@ -267,7 +274,7 @@ onMounted(fetchCandidates)
                   <button
                     class="p-2 text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                     title="Edit"
-                    @click="onEdit(c)"
+                    @click="openEdit(c)"
                   >
                     <Pencil class="w-4 h-4" />
                   </button>
@@ -311,7 +318,7 @@ onMounted(fetchCandidates)
       </div>
     </div>
 
-    <!-- ===== Edit Candidate Modal ===== -->
+    <!-- ===== Edit User Modal ===== -->
     <div
       v-if="showEditModal"
       class="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -321,14 +328,14 @@ onMounted(fetchCandidates)
         @click="closeEditModal"
       ></div>
 
-      <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
+      <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl">
         <div class="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800">
-          <div v-if="canManageRoles">
+          <div>
             <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
               <Pencil class="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              Change user role
+              Edit User
             </h3>
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Only the access role can be changed here.</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Update account details, role, and status.</p>
           </div>
           <button
             @click="closeEditModal"
@@ -338,7 +345,7 @@ onMounted(fetchCandidates)
           </button>
         </div>
 
-        <div class="px-6 py-5 space-y-4">
+        <div class="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
           <p v-if="editError" class="flex items-start gap-2 text-sm text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
             <AlertCircle class="w-4 h-4 mt-0.5 shrink-0" />
             <span>{{ editError }}</span>
@@ -348,19 +355,82 @@ onMounted(fetchCandidates)
             <span>{{ editSuccess }}</span>
           </p>
 
-          <div v-if="canManageRoles">
-            <label for="edit-account-role" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Access role</label>
-            <select
-              id="edit-account-role"
-              v-model="editForm.role"
-              class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
-            >
-              <option value="user">User / job seeker</option>
-              <option value="hr">HR</option>
-              <option value="admin">Admin</option>
-            </select>
+          <!-- Name -->
+          <div>
+            <label for="edit-user-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Full Name</label>
+            <input
+              id="edit-user-name"
+              v-model="editForm.name"
+              type="text"
+              class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
+              placeholder="Enter full name"
+            />
           </div>
 
+          <!-- Email -->
+          <div>
+            <label for="edit-user-email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Email Address</label>
+            <input
+              id="edit-user-email"
+              v-model="editForm.email"
+              type="email"
+              class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
+              placeholder="Enter email address"
+            />
+          </div>
+
+          <!-- Role & Status Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Role -->
+            <div v-if="canManageRoles">
+              <label for="edit-user-role" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Access Role</label>
+              <select
+                id="edit-user-role"
+                v-model="editForm.role"
+                class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="user">User / Job Seeker</option>
+                <option value="hr">HR Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Account Status</label>
+              <div class="flex items-center gap-3 h-[42px]">
+                <button
+                  type="button"
+                  @click="editForm.is_active = !editForm.is_active"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                  :class="editForm.is_active ? 'bg-emerald-500' : 'bg-slate-400 dark:bg-slate-600'"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm"
+                    :class="editForm.is_active ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+                <span class="text-sm font-medium" :class="editForm.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'">
+                  {{ editForm.is_active ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Password (optional) -->
+          <div>
+            <label for="edit-user-password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              New Password <span class="text-slate-400 font-normal">(leave blank to keep current)</span>
+            </label>
+            <input
+              id="edit-user-password"
+              v-model="editForm.password"
+              type="password"
+              autocomplete="new-password"
+              class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors"
+              placeholder="Min 8 characters"
+            />
+          </div>
         </div>
 
         <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800">

@@ -3,10 +3,16 @@ const apiOrigin = apiUrl.replace(/\/api\/?$/, '')
 
 export function resolveMediaUrl(value) {
   if (!value) return ''
-  if (/^https?:\/\//i.test(value)) return value
+  if (/^(https?:|blob:|data:)/i.test(value)) return value
 
   const path = String(value).replace(/^\/+/, '')
+
+  // Already a full storage path
   if (path.startsWith('storage/')) return `${apiOrigin}/${path}`
+
+  // Company logo / cover stored in storage/companies/...
+  if (path.startsWith('companies/')) return `${apiOrigin}/storage/${path}`
+
   return `${apiOrigin}/storage/${path}`
 }
 

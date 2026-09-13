@@ -2,9 +2,9 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { 
-  User, Mail, Phone, Lock, Eye, EyeOff, Send, ArrowLeft, 
-  CheckCircle2, ShieldCheck, Sparkles 
+import {
+  User, Mail, Phone, Lock, Eye, EyeOff, Send, ArrowLeft,
+  CheckCircle2, ShieldCheck, Sparkles, Smartphone, KeyRound
 } from 'lucide-vue-next'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
 import LanguageSwitcher from '../components/common/LanguageSwitcher.vue'
@@ -24,7 +24,18 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const isSubmitting = ref(false)
 
-const { register, loginWithGoogle, loginWithTelegram, handleOAuthCallback } = useAuth()
+const {
+  register,
+  loginWithGoogle,
+  requestTelegramOtp,
+  verifyTelegramOtp,
+  loginWithTelegram,
+  handleOAuthCallback,
+} = useAuth()
+
+const telegramPhone = ref('')
+const telegramCode = ref('')
+const telegramOtpStep = ref(false)
 
 onMounted(async () => {
   const callbackUser = await handleOAuthCallback()
@@ -72,6 +83,27 @@ const handleRegister = async () => {
     isSubmitting.value = false
   }
 }
+
+const requestTelegramRegister = async () => {
+  try {
+    const response = await requestTelegramOtp(telegramPhone.value)
+    telegramOtpStep.value = true
+    successMessage.value = response.message || 'Telegram code sent.'
+    errorMessage.value = ''
+  } catch (error) {
+    errorMessage.value = error.message || 'Unable to request Telegram code.'
+  }
+}
+
+const verifyTelegramRegister = async () => {
+  try {
+    const verifiedUser = await verifyTelegramOtp(telegramPhone.value, telegramCode.value)
+    router.push('/profile')
+    successMessage.value = `Welcome ${verifiedUser.name || 'there'}! Your Telegram account is connected.`
+  } catch (error) {
+    errorMessage.value = error.message || 'The Telegram verification code is invalid.'
+  }
+}
 </script>
 
 
@@ -79,7 +111,7 @@ const handleRegister = async () => {
   <div class="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 font-sans bg-slate-50 dark:bg-[#070c16] transition-colors duration-300">
     
     <!-- LEFT COLUMN: Full-Page Split-Screen Branding Panel -->
-    <div class="relative hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-900 text-white overflow-hidden">
+    <div class="relative hidden lg:flex flex-col justify-between p-12 bg-linear-to-br from-blue-700 via-blue-600 to-indigo-900 text-white overflow-hidden">
       
       <!-- Background Graphic Pattern -->
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.15),transparent_50%)] pointer-events-none"></div>
@@ -106,7 +138,7 @@ const handleRegister = async () => {
 
         <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight text-white">
           Start your career journey <br />
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">with top employers.</span>
+          <span class="text-transparent bg-clip-text bg-linear-to-r from-blue-200 to-indigo-100">with top employers.</span>
         </h1>
 
         <p class="text-blue-100 text-sm leading-relaxed">
@@ -168,6 +200,73 @@ const handleRegister = async () => {
         <!-- Success Feedback -->
         <div v-if="successMessage" class="p-3.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl text-xs font-bold text-emerald-700 dark:text-emerald-300">
           {{ successMessage }}
+        </div>
+
+        <div class="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <Smartphone class="w-3.5 h-3.5" />
+            Telegram Sign Up
+          </div>
+
+          <div v-if="!telegramOtpStep" class="space-y-3">
+            <label for="telegram-phone-register" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Phone number linked to Telegram</label>
+            <div class="relative">
+              <Smartphone class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                id="telegram-phone-register"
+                v-model="telegramPhone"
+                type="tel"
+                placeholder="+855 12 345 678"
+                class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+              />
+            </div>
+            <button
+              type="button"
+              @click="requestTelegramRegister"
+              class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/70 dark:bg-sky-950/40 dark:text-sky-300 font-bold text-xs shadow-sm hover:bg-sky-100 dark:hover:bg-sky-900/50 transition"
+            >
+              <KeyRound class="w-4 h-4" />
+              Send Telegram OTP
+            </button>
+          </div>
+
+          <div v-else class="space-y-3">
+            <label for="telegram-code-register" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Verification code</label>
+            <div class="relative">
+              <KeyRound class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                id="telegram-code-register"
+                v-model="telegramCode"
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="Enter 6-digit code"
+                class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+              />
+            </div>
+            <button
+              type="button"
+              @click="verifyTelegramRegister"
+              class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-500/20 transition"
+            >
+              <CheckCircle2 class="w-4 h-4" />
+              Verify OTP
+            </button>
+            <button
+              type="button"
+              @click="telegramOtpStep = false; telegramCode = ''"
+              class="w-full text-center text-[11px] font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Change phone number
+            </button>
+          </div>
+        </div>
+
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200 dark:border-slate-800"></div></div>
+          <div class="relative flex justify-center text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+            <span class="bg-slate-50 dark:bg-[#070c16] px-3">Or use email</span>
+          </div>
         </div>
 
         <form @submit.prevent="handleRegister" class="space-y-4">

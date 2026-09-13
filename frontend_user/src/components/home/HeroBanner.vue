@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { 
   Search, 
   MapPin, 
@@ -11,24 +12,30 @@ import {
   Sparkles
 } from 'lucide-vue-next'
 
+const router = useRouter()
+
 // Search Inputs State
 const jobTitle = ref('')
 const location = ref('')
 
 // Popular Searches Tags
 const popularTags = [
-  'Laravel Developer',
-  'Vue.js Specialist',
+  'Software Engineer',
+  'Frontend Developer',
   'UI/UX Designer',
-  'Data Analyst',
-  'Network Engineer'
+  'Data Science',
+  'DevOps'
 ]
 
 // Handle Search Action
 const handleSearch = () => {
-  console.log('Search Triggered:', { 
-    jobTitle: jobTitle.value, 
-    location: location.value 
+  const query = {}
+  if (jobTitle.value.trim()) query.search = jobTitle.value.trim()
+  if (location.value.trim()) query.location = location.value.trim()
+
+  router.push({
+    path: '/jobs',
+    query
   })
 }
 
@@ -41,6 +48,10 @@ const clearInputs = () => {
 // Select Popular Tag Action
 const selectTag = (tag) => {
   jobTitle.value = tag
+  router.push({
+    path: '/jobs',
+    query: { search: tag }
+  })
 }
 </script>
 

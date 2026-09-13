@@ -14,6 +14,7 @@ class Skill extends Model
         'name',
         'slug',
         'category',
+        'category_id',
         'description',
         'is_active',
     ];
@@ -46,6 +47,11 @@ class Skill extends Model
     // -------------------------------------------------------------------------
     // Relationships
     // -------------------------------------------------------------------------
+
+    public function skillCategory(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(SkillCategory::class, 'category_id');
+    }
 
     public function jobs(): BelongsToMany
     {

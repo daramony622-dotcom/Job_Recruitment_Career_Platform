@@ -29,7 +29,7 @@ const team = [
     bio: 'Focuses on database optimization, Redis queue workers, notification delivery pipelines, and server-side performance.',
     tech_stack: ['Laravel', 'PostgreSQL', 'Redis', 'WebSockets', 'Docker'],
     email: 'mengsiek8@gmail.com',
-    github: 'https://github.com',
+    github: 'https://github.com/',
     linkedin: 'https://linkedin.com'
   },
   {

@@ -18,8 +18,8 @@ async function submit() {
   loading.value = true
   error.value = ''
   try {
-    await login(email.value.trim(), password.value)
-    router.push('/')
+    const user = await login(email.value.trim(), password.value)
+    router.push(user && (user.role === 'admin' || user.role === 'hr' || user.role === 'company' || user.is_admin) ? '/dashboard' : '/')
   } catch (e) {
     console.error('Login failed:', e)
     const res = e.response
@@ -37,7 +37,7 @@ async function submit() {
 </script>
 
 <template>
-  <div class="min-h-screen w-full flex bg-slate-950 text-slate-100 font-sans">
+  <div class="login-page min-h-screen w-full flex bg-slate-950 text-slate-100 font-sans">
     <!-- ផ្នែកខាងឆ្វេង៖ ពណ៌ខៀវ និង Branding ស្រដៀងទំព័រ User -->
     <div class="hidden lg:flex lg:w-1/2 bg-blue-600 p-12 flex-col justify-between relative overflow-hidden">
       <!-- Background decorative circles -->
@@ -47,10 +47,15 @@ async function submit() {
       <!-- Top Header / Back Button -->
       <div class="flex items-center justify-between relative z-10">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-white text-blue-600 flex items-center justify-center font-black text-xl shadow-md">
-            A
+          <img
+            src="/logo.png"
+            alt="Recruit Admin"
+            class="h-10 sm:h-11 w-auto object-contain bg-white/95 rounded-xl p-1 shadow-md"
+          />
+          <div>
+            <span class="font-bold text-white text-lg block leading-tight">Recruit Admin</span>
+            <span class="text-xs text-blue-100/80">Management Portal</span>
           </div>
-          <span class="font-bold text-white text-lg">Recruit Admin</span>
         </div>
         <router-link
           to="/"
@@ -109,10 +114,11 @@ async function submit() {
         <!-- Form -->
         <form @submit.prevent="submit" class="space-y-4">
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Email Address</label>
+            <label for="admin-email" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Email Address</label>
             <div class="relative">
               <Mail class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
+                id="admin-email"
                 v-model="email"
                 type="email"
                 required
@@ -125,12 +131,13 @@ async function submit() {
 
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Password</label>
+              <label for="admin-password" class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Password</label>
               <a href="#" class="text-xs text-blue-400 hover:underline">Forgot password?</a>
             </div>
             <div class="relative">
               <Lock class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
+                id="admin-password"
                 v-model="password"
                 type="password"
                 required

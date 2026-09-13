@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Job Seeker API Routes
 |--------------------------------------------------------------------------
-| Base Prefix (/api/user OR /api/job-seeker) & Middleware (auth:sanctum, role:user)
+| Base Prefix (/api/user OR /api/job-seeker) & Middleware (auth:sanctum, role:user,job_seeker,hr,company,admin)
 | are inherited from api.php
 */
 

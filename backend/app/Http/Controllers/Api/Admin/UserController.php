@@ -83,6 +83,7 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
+        // Only admin can change roles
         if ($request->has('role') && $request->user()?->role !== 'admin') {
             abort(403, 'Only an authenticated administrator can change user roles.');
         }
@@ -92,8 +93,17 @@ class UserController extends Controller
         }
 
         $validated = $request->validate([
-            'role' => ['required', 'string', 'in:admin,hr,user'],
+            'name'      => ['sometimes', 'string', 'max:255'],
+            'email'     => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'role'      => ['sometimes', 'string', 'in:admin,hr,user'],
+            'is_active' => ['sometimes', 'boolean'],
+            'password'  => ['sometimes', 'nullable', 'string', 'min:8'],
         ]);
+
+        // Remove null/empty password so it doesn't get hashed
+        if (empty($validated['password'])) {
+            unset($validated['password']);
+        }
 
         $user = $this->userService->updateUser($user, $validated);
 

@@ -2,9 +2,9 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
-import { 
-  Mail, Lock, Eye, EyeOff, Send, ArrowLeft, 
-  CheckCircle2, ShieldCheck, Sparkles 
+import {
+  Mail, Lock, Eye, EyeOff, Send, ArrowLeft,
+  CheckCircle2, ShieldCheck, Sparkles
 } from 'lucide-vue-next'
 import ThemeToggle from '../components/common/ThemeToggle.vue'
 import LanguageSwitcher from '../components/common/LanguageSwitcher.vue'
@@ -16,12 +16,70 @@ const rememberMe = ref(false)
 const showPassword = ref(false)
 const isSubmitting = ref(false)
 const loginError = ref('')
-const { login, loginWithGoogle, loginWithTelegram, handleOAuthCallback } = useAuth()
+
+const {
+  login,
+  loginWithGoogle,
+  requestTelegramOtp,
+  verifyTelegramOtp,
+  handleOAuthCallback,
+  fetchCurrentUser,
+  user
+} = useAuth()
+
+const telegramPhone = ref('')
+const telegramCode = ref('')
+const telegramOtpStep = ref(false)
+const telegramOtpPending = ref(false)
+
+const isAdminDashboardRole = (userData) =>
+  Boolean(userData && (['admin', 'hr', 'company'].includes(userData.role) || userData.is_admin))
+
+const redirectAfterLogin = (userData) => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const redirectParam = urlParams.get('redirect')
+
+  if (isAdminDashboardRole(userData) || redirectParam === 'admin') {
+    const adminBase = (import.meta.env.VITE_ADMIN_URL || 'http://localhost:5174').replace(/\/$/, '')
+    const userToken =
+      localStorage.getItem('job_platform_token') ||
+      localStorage.getItem('admin_token') ||
+      localStorage.getItem('auth_token')
+
+    const targetUrl = new URL('/dashboard', adminBase)
+    if (userToken) {
+      targetUrl.searchParams.set('token', userToken)
+    }
+
+    window.location.href = targetUrl.toString()
+    return
+  }
+
+  if (redirectParam && redirectParam !== 'admin') {
+    router.push(redirectParam)
+    return
+  }
+
+  router.push('/profile')
+}
 
 onMounted(async () => {
   const callbackUser = await handleOAuthCallback()
   if (callbackUser) {
-    router.push('/profile')
+    redirectAfterLogin(callbackUser)
+    return
+  }
+
+  const urlParams = new URLSearchParams(window.location.search)
+  const existingToken =
+    localStorage.getItem('job_platform_token') ||
+    localStorage.getItem('admin_token')
+
+  if (existingToken && urlParams.get('redirect') === 'admin') {
+    const sessionUser = await fetchCurrentUser()
+    if (isAdminDashboardRole(sessionUser || user.value)) {
+      redirectAfterLogin(sessionUser || user.value)
+    }
   }
 })
 
@@ -30,27 +88,42 @@ const handleLogin = async () => {
   loginError.value = ''
 
   try {
-    await login(email.value, password.value)
-    router.push('/profile')
+    const authenticatedUser = await login(email.value, password.value)
+    redirectAfterLogin(authenticatedUser)
   } catch (error) {
-    loginError.value = error.message
+    loginError.value = error.message || 'Login failed. Please verify your credentials.'
   } finally {
     isSubmitting.value = false
+  }
+}
+
+const requestTelegramLogin = async () => {
+  try {
+    const response = await requestTelegramOtp(telegramPhone.value)
+    telegramOtpPending.value = true
+    telegramOtpStep.value = true
+    loginError.value = response.message || 'Telegram code sent.'
+  } catch (error) {
+    loginError.value = error.message || 'Unable to request Telegram code.'
+  }
+}
+
+const verifyTelegramLogin = async () => {
+  try {
+    const verifiedUser = await verifyTelegramOtp(telegramPhone.value, telegramCode.value)
+    redirectAfterLogin(verifiedUser)
+  } catch (error) {
+    loginError.value = error.message || 'The Telegram verification code is invalid.'
   }
 }
 </script>
 
 <template>
   <div class="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 font-sans bg-slate-50 dark:bg-[#070c16] transition-colors duration-300">
-    
-    <!-- LEFT COLUMN: Full-Page Split-Screen Branding Panel -->
-    <div class="relative hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-900 text-white overflow-hidden">
-      
-      <!-- Background Graphic Pattern -->
+    <div class="relative hidden lg:flex flex-col justify-between p-12 bg-linear-to-br from-blue-700 via-blue-600 to-indigo-900 text-white overflow-hidden">
       <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.15),transparent_50%)] pointer-events-none"></div>
       <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-      <!-- Top Branding Logo & Back Button -->
       <div class="relative z-10 flex items-center justify-between">
         <router-link to="/" class="flex items-center gap-2 group">
           <img src="/logo.png" alt="Job Search Logo" class="h-14 w-auto object-contain bg-white/10 rounded-xl p-1 backdrop-blur-md border border-white/20 transition-transform group-hover:scale-105" />
@@ -62,44 +135,43 @@ const handleLogin = async () => {
         </router-link>
       </div>
 
-      <!-- Center Feature Content -->
       <div class="relative z-10 space-y-6 max-w-lg my-auto py-12">
         <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-blue-100">
           <Sparkles class="w-3.5 h-3.5 text-amber-400" />
-          <span>Cambodia's #1 Career & Recruitment Platform</span>
+          <span>Welcome back</span>
         </div>
 
         <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight text-white">
-          Welcome back to <br />
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">your career hub.</span>
+          Find your next opportunity
+          <span class="text-transparent bg-clip-text bg-linear-to-r from-blue-200 to-indigo-100">with confidence.</span>
         </h1>
 
         <p class="text-blue-100 text-sm leading-relaxed">
-          Access thousands of curated job listings, track your job applications in real-time, and get direct messages from verified employers.
+          Access your profile, track applications, and apply to jobs from one secure dashboard built for candidates.
         </p>
 
-        <!-- Key Feature Badges -->
         <div class="space-y-3 pt-2">
           <div class="flex items-center gap-3 text-xs font-semibold text-white/90">
             <CheckCircle2 class="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>1-Click Application with Saved CV</span>
+            <span>Saved jobs and application tracking</span>
           </div>
           <div class="flex items-center gap-3 text-xs font-semibold text-white/90">
             <CheckCircle2 class="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Verified Salaries & Company Reviews</span>
+            <span>Profile-based job recommendations</span>
           </div>
           <div class="flex items-center gap-3 text-xs font-semibold text-white/90">
             <ShieldCheck class="w-4 h-4 text-amber-300 shrink-0" />
-            <span>100% Free for Candidates & Job Seekers</span>
+            <span>Fast, secure access for candidates and employers</span>
           </div>
         </div>
       </div>
+
+      <div class="relative z-10 pt-6 border-t border-white/15 text-xs text-blue-200">
+        Trusted by candidates and hiring teams across Southeast Asia.
+      </div>
     </div>
 
-    <!-- RIGHT COLUMN: Form Panel -->
-    <div class="flex flex-col justify-between p-6 sm:p-12 lg:p-16 relative bg-white dark:bg-[#0d1526] transition-colors duration-300">
-      
-      <!-- Top Action Bar (Theme & Language) -->
+    <div class="flex flex-col justify-between p-6 sm:p-12 lg:p-16 relative">
       <div class="flex items-center justify-between sm:justify-end gap-3 pb-6">
         <router-link to="/" class="lg:hidden flex items-center gap-2">
           <img src="/logo.png" alt="Logo" class="h-10 w-auto object-contain" />
@@ -111,141 +183,165 @@ const handleLogin = async () => {
         </div>
       </div>
 
-      <!-- Main Login Form Box -->
-      <div class="max-w-md w-full mx-auto space-y-8 my-auto py-6">
-        
+      <div class="max-w-md w-full mx-auto space-y-6 my-auto py-6">
         <div class="space-y-2">
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Sign In to Your Account</h2>
-          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Enter your credentials below to access your candidate dashboard.</p>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Welcome back</h2>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Log in to continue your job search and manage your profile.</p>
         </div>
 
-        <form @submit.prevent="handleLogin" class="space-y-5">
-          <div v-if="loginError" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700" role="alert">
-            {{ loginError }}
-          </div>
-          
-          <!-- Email Field -->
-          <div class="space-y-1.5">
-            <label for="email" class="block text-xs font-bold text-slate-700 dark:text-slate-300">
-              Email Address
-            </label>
+        <div v-if="loginError" class="p-3.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 rounded-2xl text-xs font-bold text-rose-700 dark:text-rose-300">
+          {{ loginError }}
+        </div>
+
+        <form @submit.prevent="handleLogin" class="space-y-4">
+          <div class="space-y-1">
+            <label for="email" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Email Address</label>
             <div class="relative">
               <Mail class="w-4.5 h-4.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input 
+              <input
                 id="email"
                 v-model="email"
-                type="email" 
-                placeholder="your.email@example.com" 
+                type="email"
+                placeholder="you@example.com"
                 required
-                class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/15 transition duration-200"
+                class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/15 transition duration-200"
               />
             </div>
           </div>
 
-          <!-- Password Field -->
-          <div class="space-y-1.5">
-            <div class="flex justify-between items-center">
-              <label for="password" class="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                Password
-              </label>
-              <a href="#" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
-                Forgot password?
-              </a>
-            </div>
-
+          <div class="space-y-1">
+            <label for="password" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Password</label>
             <div class="relative">
               <Lock class="w-4.5 h-4.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input 
+              <input
                 id="password"
                 v-model="password"
-                :type="showPassword ? 'text' : 'password'" 
-                placeholder="••••••••" 
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="••••••••"
                 required
-                class="w-full pl-10 pr-11 py-3 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/15 transition duration-200"
+                class="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-2xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/15 transition duration-200"
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 @click="showPassword = !showPassword"
                 class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
-                aria-label="Toggle password visibility"
               >
-                <EyeOff v-if="!showPassword" class="w-4.5 h-4.5" />
-                <Eye v-else class="w-4.5 h-4.5" />
+                <EyeOff v-if="!showPassword" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <!-- Remember Me Checkbox -->
-          <div class="flex items-center justify-between pt-1">
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-              <input v-model="rememberMe" type="checkbox" class="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-700 focus:ring-blue-500/20" />
-              <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Remember me on this device</span>
+          <div class="flex items-center justify-between gap-2 text-xs">
+            <label class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300 font-medium">
+              <input v-model="rememberMe" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+              <span>Remember me</span>
             </label>
+            <router-link to="/forgot-password" class="font-bold text-blue-600 dark:text-blue-400 hover:underline">Forgot password?</router-link>
           </div>
 
-          <!-- Submit Button -->
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             :disabled="isSubmitting"
-            class="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl text-xs sm:text-sm transition duration-200 active:scale-[0.99] shadow-lg shadow-blue-500/25 disabled:opacity-50 cursor-pointer"
+            class="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold shadow-lg shadow-blue-500/20 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {{ isSubmitting ? 'Signing in...' : 'Sign In to Account' }}
+            <Send class="w-4 h-4" />
+            <span>{{ isSubmitting ? 'Signing In...' : 'Sign In' }}</span>
           </button>
         </form>
 
-        <!-- Divider -->
-        <div class="relative flex items-center justify-center my-6">
-          <div class="border-t border-slate-200 dark:border-slate-800 w-full"></div>
-          <span class="bg-white dark:bg-[#0d1526] px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 absolute">
-            OR Continue With
-          </span>
+        <div class="relative my-4">
+          <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200 dark:border-slate-800"></div></div>
+          <div class="relative flex justify-center text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+            <span class="bg-slate-50 dark:bg-[#070c16] px-3">Or continue with</span>
+          </div>
         </div>
 
-        <!-- Social Login Buttons -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 shadow-sm">
+          <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <Smartphone class="w-3.5 h-3.5" />
+            Telegram OTP
+          </div>
+
+          <div v-if="!telegramOtpStep" class="space-y-3">
+            <label for="telegram-phone-login" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Phone number linked to Telegram</label>
+            <div class="relative">
+              <Smartphone class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                id="telegram-phone-login"
+                v-model="telegramPhone"
+                type="tel"
+                placeholder="+855 12 345 678"
+                class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+              />
+            </div>
+            <button
+              type="button"
+              @click="requestTelegramLogin"
+              class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/70 dark:bg-sky-950/40 dark:text-sky-300 font-bold text-xs shadow-sm hover:bg-sky-100 dark:hover:bg-sky-900/50 transition"
+            >
+              <KeyRound class="w-4 h-4" />
+              Send Telegram OTP
+            </button>
+          </div>
+
+          <div v-else class="space-y-3">
+            <label for="telegram-code-login" class="block text-xs font-bold text-slate-700 dark:text-slate-300">Verification code</label>
+            <div class="relative">
+              <KeyRound class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                id="telegram-code-login"
+                v-model="telegramCode"
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="Enter 6-digit code"
+                class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+              />
+            </div>
+            <button
+              type="button"
+              @click="verifyTelegramLogin"
+              class="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md shadow-sky-500/20 transition"
+            >
+              <CheckCircle2 class="w-4 h-4" />
+              Verify OTP
+            </button>
+            <button
+              type="button"
+              @click="telegramOtpStep = false; telegramCode = ''; telegramOtpPending = false"
+              class="w-full text-center text-[11px] font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Change phone number
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <button
             type="button"
             @click="loginWithGoogle"
-            class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-50 dark:bg-[#0d1526] border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all duration-150 active:scale-[0.99] cursor-pointer"
+            class="inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm shadow-sm hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-800 transition"
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-            </svg>
-            <span>Google</span>
+            <span class="inline-block h-4 w-4 rounded-full bg-linear-to-br from-red-500 via-yellow-400 to-blue-600"></span>
+            Google
           </button>
 
           <button
             type="button"
-            @click="loginWithTelegram"
-            class="flex items-center justify-center gap-2 py-3 px-4 bg-slate-50 dark:bg-[#0d1526] border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all duration-150 active:scale-[0.99] cursor-pointer"
+            @click="loginWithTelegram(telegramPhone)"
+            class="inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm shadow-sm hover:border-blue-300 hover:bg-blue-50 dark:hover:bg-slate-800 transition"
           >
-            <Send class="w-4 h-4 text-sky-500 fill-sky-500" />
-            <span>Telegram</span>
+            <span class="inline-block h-4 w-4 rounded-full bg-linear-to-br from-sky-500 to-indigo-600"></span>
+            Telegram
           </button>
         </div>
 
-
-        <!-- Register Link Navigation -->
-        <div class="text-center pt-4">
-          <p class="text-xs text-slate-500 dark:text-slate-400">
-            Don't have an account yet? 
-            <router-link to="/register" class="font-extrabold text-blue-600 dark:text-blue-400 hover:underline transition ml-1">
-              Create Account
-            </router-link>
-          </p>
-        </div>
-
+        <p class="text-center text-xs text-slate-500 dark:text-slate-400">
+          Don’t have an account?
+          <router-link to="/register" class="font-bold text-blue-600 dark:text-blue-400 hover:underline">Create one now</router-link>
+        </p>
       </div>
-
-      <!-- Bottom Terms Footer -->
-      <div class="text-center text-[11px] text-slate-400">
-        © 2026 Job Search. Protected by reCAPTCHA and Subject to Terms & Privacy.
-      </div>
-
     </div>
-
   </div>
 </template>

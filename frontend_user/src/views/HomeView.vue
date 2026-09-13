@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import Navbar from '../components/layout/Navbar.vue'
 import HeroBanner from '../components/home/HeroBanner.vue'
 import JobFilters from '../components/jobs/JobFilters.vue'
@@ -6,6 +7,27 @@ import CategorySection from '../components/home/CategorySection.vue'
 import JobList from '../components/jobs/JobList.vue'
 import Footer from '../components/layout/Footer.vue'
 import { ArrowRight, UserCheck } from 'lucide-vue-next'
+
+const selectedCategory = ref('')
+const selectedLocation = ref('')
+const selectedSalary = ref('')
+const selectedTime = ref('')
+
+function handleCategorySelect(cat) {
+  selectedCategory.value = cat.slug || cat.name
+  // Smoothly scroll to jobs section if on homepage
+  const el = document.getElementById('featured-jobs-section')
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+function handleClearFilters() {
+  selectedCategory.value = ''
+  selectedLocation.value = ''
+  selectedSalary.value = ''
+  selectedTime.value = ''
+}
 </script>
 
 <template>
@@ -17,18 +39,34 @@ import { ArrowRight, UserCheck } from 'lucide-vue-next'
       <HeroBanner />
 
       <!-- Filters -->
-      <JobFilters/>
+      <JobFilters
+        v-model:category="selectedCategory"
+        v-model:location="selectedLocation"
+        v-model:salary="selectedSalary"
+        v-model:time="selectedTime"
+        :has-active-filters="Boolean(selectedCategory || selectedLocation || selectedSalary || selectedTime)"
+        @reset="handleClearFilters"
+      />
 
       <!-- 2. Categories Section -->
-      <CategorySection />
+      <CategorySection
+        v-model="selectedCategory"
+        :navigate-on-select="false"
+        @select="handleCategorySelect"
+      />
 
       <!-- 3. Featured & Latest Jobs -->
-      <section class="space-y-6">
+      <section id="featured-jobs-section" class="space-y-6 scroll-mt-24">
         <div>
           <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Featured Opportunities</h2>
           <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Discover recent job openings from top employers</p>
         </div>
-        <JobList />
+        <JobList
+          v-model:category="selectedCategory"
+          v-model:location="selectedLocation"
+          :salary="selectedSalary"
+          @clear-filters="handleClearFilters"
+        />
       </section>
 
       <!-- 4. Call to Action Banner -->

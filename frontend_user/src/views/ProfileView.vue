@@ -57,7 +57,8 @@ const api = useJobSeekerApi()
 const { setProfileAvatar, user, token } = useAuth()
 
 const isAdmin = computed(() => {
-  return user.value?.role === 'admin' || profile.value?.role === 'admin' || profile.value?.user?.role === 'admin'
+  const resourceRoles = [user.value?.role, profile.value?.role, profile.value?.user?.role]
+  return resourceRoles.some((role) => ['admin', 'hr', 'company'].includes(role))
 })
 
 const adminDashboardUrl = computed(() => {
@@ -68,7 +69,6 @@ const adminDashboardUrl = computed(() => {
   }
   return url.toString()
 })
-
 
 const education = ref([])
 const experience = ref([])
@@ -567,10 +567,10 @@ const formatDate = (iso) => {
               target="_blank"
               rel="noopener noreferrer"
               class="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-2xl shadow-md shadow-purple-500/20 transition active:scale-95 cursor-pointer"
-              title="Go to Admin Dashboard"
+              title="Go to Dashboard"
             >
               <ShieldCheck class="w-4 h-4 text-purple-200" />
-              <span>Admin Dashboard</span>
+              <span>Dashboard</span>
             </a>
 
             <button 
@@ -1025,12 +1025,10 @@ const formatDate = (iso) => {
               {{ isSaving ? 'Saving...' : 'Save Profile Changes' }}
             </button>
           </div>
-
         </form>
-
       </div>
     </div>
-
     <Footer />
   </div>
+
 </template>

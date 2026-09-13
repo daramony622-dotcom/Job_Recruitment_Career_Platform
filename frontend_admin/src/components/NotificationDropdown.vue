@@ -15,14 +15,15 @@ import {
   Users,
   Clock,
   Trash2,
-  X
+  X,
+  Mail,
 } from 'lucide-vue-next'
 import { adminApi } from '../api'
 
 const router = useRouter()
 const isOpen = ref(false)
 const loading = ref(false)
-const activeTab = ref('all') // 'all' | 'unread' | 'security' | 'recruitment'
+const activeTab = ref('all') // 'all' | 'unread' | 'messages' | 'security' | 'recruitment'
 
 const notifications = ref([
   {
@@ -64,6 +65,9 @@ const unreadCount = computed(() => {
 const filteredNotifications = computed(() => {
   if (activeTab.value === 'unread') {
     return notifications.value.filter((n) => !n.read)
+  }
+  if (activeTab.value === 'messages') {
+    return notifications.value.filter((n) => n.category === 'message' || n.category === 'inquiry')
   }
   if (activeTab.value === 'security') {
     return notifications.value.filter((n) => n.category === 'security' || n.category === 'system')
@@ -136,6 +140,7 @@ function formatTimeAgo(isoString) {
 }
 
 function getIcon(notification) {
+  if (notification.category === 'message' || notification.category === 'inquiry') return Mail
   if (notification.category === 'security') return ShieldAlert
   if (notification.level === 'danger' || notification.level === 'warning') return AlertTriangle
   if (notification.category === 'recruitment') return Briefcase
@@ -143,6 +148,7 @@ function getIcon(notification) {
 }
 
 function getIconColor(notification) {
+  if (notification.category === 'message' || notification.category === 'inquiry') return 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 dark:text-indigo-400'
   if (notification.level === 'danger') return 'text-rose-600 bg-rose-50 dark:bg-rose-950/50 dark:text-rose-400'
   if (notification.level === 'warning') return 'text-amber-600 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-400'
   if (notification.category === 'security') return 'text-purple-600 bg-purple-50 dark:bg-purple-950/50 dark:text-purple-400'
@@ -242,6 +248,7 @@ onBeforeUnmount(() => {
             v-for="tab in [
               { id: 'all', label: 'All' },
               { id: 'unread', label: 'Unread' },
+              { id: 'messages', label: 'Inquiries & Messages' },
               { id: 'security', label: 'Security & System' },
               { id: 'recruitment', label: 'Recruitment' },
             ]"

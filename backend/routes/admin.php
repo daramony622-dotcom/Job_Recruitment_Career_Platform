@@ -12,8 +12,10 @@ use App\Http\Controllers\Api\Admin\NotificationController;
 use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\SecurityController;
 use App\Http\Controllers\Api\Admin\SettingController;
+use App\Http\Controllers\Api\Admin\SkillCategoryController;
 use App\Http\Controllers\Api\Admin\SkillController;
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\ContactController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -47,7 +49,14 @@ Route::name('admin.')->group(function () {
         ->name('job-posts.forceDelete');
     Route::post('job-posts/{jobPost}/toggle-featured', [JobPostController::class, 'toggleFeatured'])
         ->name('job-posts.toggle-featured');
+    Route::patch('skill-categories/{skillCategory}/toggle-active', [SkillCategoryController::class, 'toggleActive'])
+        ->name('skill-categories.toggle-active');
+    Route::apiResource('skill-categories', SkillCategoryController::class)
+        ->parameters(['skill-categories' => 'skillCategory']);
     Route::apiResource('skills', SkillController::class);
+
+    // Contact & Inquiries from Frontend
+    Route::apiResource('contact-messages', ContactController::class)->only(['index', 'show', 'destroy']);
 
     // Queue Jobs Management (jobs, job-batches, failed-jobs)
     Route::apiResource('jobs', JobController::class);

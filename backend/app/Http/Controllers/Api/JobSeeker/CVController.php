@@ -44,7 +44,7 @@ class CVController extends Controller
      * Store a newly created resource in storage.
      */
 
-    public function store(StoreCVRequest $request): CVResource
+    public function store(StoreCVRequest $request): JsonResponse
     {
         $user = $request->user();
         $data = $request->validated();
@@ -62,7 +62,7 @@ class CVController extends Controller
 
         $cv = CV::create($data);
 
-        return new CVResource($cv);
+        return (new CVResource($cv))->response()->setStatusCode(200);
     }
 
     /**
@@ -76,7 +76,7 @@ class CVController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCVRequest $request, CV $cv): CVResource
+    public function update(UpdateCVRequest $request, CV $cv): JsonResponse
     {
         $data = $request->validated();
 
@@ -94,7 +94,7 @@ class CVController extends Controller
 
         $cv->update($data);
 
-        return new CVResource($cv);
+        return (new CVResource($cv))->response()->setStatusCode(200);
     }
 
     /**

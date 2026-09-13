@@ -3,9 +3,9 @@
     <button
       type="button"
       @click="menuOpen = !menuOpen"
-      class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/60 hover:bg-blue-50/60 dark:hover:bg-blue-950/50 transition-all duration-200 cursor-pointer text-slate-700 dark:text-slate-200 font-semibold text-xs shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
+      class="admin-control flex items-center gap-2 px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500/60 hover:bg-blue-50/60 dark:hover:bg-blue-950/50 transition-all duration-200 cursor-pointer text-slate-700 dark:text-slate-200 font-semibold text-xs shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30"
       :aria-expanded="menuOpen"
-      aria-haspopup="listbox"
+      aria-haspopup="menu"
       aria-label="Choose language"
     >
       <FlagIcon :country="activeLanguage.country" />
@@ -24,15 +24,14 @@
       <div
         v-if="menuOpen"
         class="absolute right-0 mt-2 w-44 rounded-2xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-900 p-1.5 shadow-xl shadow-slate-900/10 dark:shadow-black/30 z-50"
-        role="listbox"
+        role="menu"
         aria-label="Language options"
       >
         <button
           v-for="language in languages"
           :key="language.code"
           type="button"
-          role="option"
-          :aria-selected="currentLang === language.code"
+          role="menuitem"
           @click="selectLanguage(language.code)"
           class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition-colors duration-150 cursor-pointer"
           :class="currentLang === language.code

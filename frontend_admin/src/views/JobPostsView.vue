@@ -1,8 +1,13 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Briefcase,
+  Building2,
+  CalendarClock,
+  CircleDot,
+  ClipboardList,
+  MapPin,
   Search,
   Plus,
   RefreshCw,
@@ -19,6 +24,7 @@ import { adminApi } from '../api'
 import StatusBadge from '../components/StatusBadge.vue'
 
 const router = useRouter()
+const isCompanyScopedUser = computed(() => ['hr', 'company'].includes(JSON.parse(localStorage.getItem('admin_user') || 'null')?.role))
 
 const loading = ref(false)
 const error = ref('')
@@ -31,6 +37,13 @@ const experienceLevels = ['entry', 'junior', 'mid', 'senior', 'lead', 'executive
 const currencies = ['USD', 'EUR', 'GBP', 'KHR']
 const salaryPeriods = ['hourly', 'daily', 'monthly', 'yearly']
 const statuses = ['draft', 'published', 'closed', 'suspended']
+
+const statusSummary = computed(() => [
+  { label: 'All listings', value: pagination.total, icon: ClipboardList, iconClass: 'bg-blue-500/10 text-blue-600 dark:text-blue-400' },
+  { label: 'Published', value: jobPosts.value.filter((job) => job.status === 'published').length, icon: CircleDot, iconClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+  { label: 'Drafts', value: jobPosts.value.filter((job) => job.status === 'draft').length, icon: Pencil, iconClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  { label: 'Closing soon', value: jobPosts.value.filter((job) => job.deadline && new Date(job.deadline) >= new Date() && new Date(job.deadline) <= new Date(Date.now() + 14 * 86400000)).length, icon: CalendarClock, iconClass: 'bg-rose-500/10 text-rose-600 dark:text-rose-400' },
+])
 
 const showModal = ref(false)
 const editingJob = ref(null)
@@ -119,7 +132,11 @@ async function fetchLookups() {
     ])
 
     const pager = (res) => (res?.data?.data || res?.data || [])
-    companies.value = pager(companyRes.data)
+    const companyData = pager(companyRes.data)
+    companies.value = Array.isArray(companyData) ? companyData : (companyData ? [companyData] : [])
+    if (isCompanyScopedUser.value && companies.value[0]?.id) {
+      form.company_id = companies.value[0].id
+    }
     categories.value = pager(categoryRes.data)
     skills.value = pager(skillRes.data)
   } catch (e) {
@@ -135,6 +152,9 @@ async function openModal() {
   showModal.value = true
   if (companies.value.length === 0 || categories.value.length === 0 || skills.value.length === 0) {
     await fetchLookups()
+  }
+  if (isCompanyScopedUser.value && companies.value[0]?.id) {
+    form.company_id = companies.value[0].id
   }
 }
 
@@ -249,6 +269,14 @@ watch(
   },
 )
 
+watch(
+  () => filters.per_page,
+  () => {
+    filters.page = 1
+    fetchJobPosts()
+  },
+)
+
 function goToPage(page) {
   if (page < 1 || page > pagination.last_page) return
   filters.page = page
@@ -286,26 +314,40 @@ onMounted(fetchJobPosts)
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+  <div class="min-h-full bg-slate-50/70 p-4 sm:p-6 lg:p-8 dark:bg-slate-950/30">
+    <div class="mb-7 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
-        <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <Briefcase class="w-6 h-6 text-blue-600 dark:text-blue-500" />
-          Job Posts
+        <div class="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
+          <Briefcase class="h-4 w-4" /> Recruitment workspace
+        </div>
+        <h2 class="flex items-center gap-2 text-3xl font-black tracking-tight text-slate-950 dark:text-slate-50">
+          Job posts
         </h2>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">{{ pagination.total }} job posts in total</p>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Create, publish, and manage every opportunity across the platform.</p>
       </div>
       <button
         @click="openModal"
-        class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+        class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
       >
         <Plus class="w-4 h-4" />
-        {{ editingJob ? 'Edit Job Post' : 'New Job Post' }}
+        New job post
       </button>
     </div>
 
-    <div class="flex flex-col lg:flex-row gap-3 mb-6">
-      <div class="flex-1 flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 max-w-xl">
+    <div class="mb-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div v-for="item in statusSummary" :key="item.label" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="flex items-center justify-between">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl" :class="item.iconClass">
+            <component :is="item.icon" class="h-4 w-4" />
+          </div>
+          <span class="text-2xl font-black text-slate-900 dark:text-slate-100">{{ item.value }}</span>
+        </div>
+        <p class="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{{ item.label }}</p>
+      </div>
+    </div>
+
+    <div class="mb-5 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:flex-row">
+      <div class="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950">
         <Search class="w-4 h-4 text-slate-500" />
         <input
           v-model="filters.search"
@@ -315,10 +357,10 @@ onMounted(fetchJobPosts)
         />
       </div>
 
-      <div class="flex gap-3">
+      <div class="flex flex-wrap gap-2">
         <select
           v-model="filters.status"
-          class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500"
+          class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
         >
           <option value="">All statuses</option>
           <option value="draft">Draft</option>
@@ -326,9 +368,19 @@ onMounted(fetchJobPosts)
           <option value="closed">Closed</option>
           <option value="suspended">Suspended</option>
         </select>
+        <select
+          v-model="filters.per_page"
+          class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+          aria-label="Rows per page"
+        >
+          <option :value="15">15 rows</option>
+          <option :value="30">30 rows</option>
+          <option :value="50">50 rows</option>
+        </select>
         <button
           @click="fetchJobPosts"
-          class="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-blue-500 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400"
+          title="Refresh job posts"
         >
           <RefreshCw class="w-4 h-4" />
           <span class="hidden sm:inline">Refresh</span>
@@ -340,19 +392,19 @@ onMounted(fetchJobPosts)
       {{ error }}
     </p>
 
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left">
-          <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-xs uppercase border-b border-slate-200 dark:border-slate-800">
+          <thead class="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
             <tr>
-              <th class="px-5 py-3.5 font-semibold">Job Title</th>
-              <th class="px-5 py-3.5 font-semibold">Company</th>
+              <th class="px-5 py-4 font-bold">Opportunity</th>
+              <th class="px-5 py-4 font-bold">Company</th>
               <th class="px-5 py-3.5 font-semibold">Location</th>
               <th class="px-5 py-3.5 font-semibold">Type / Mode</th>
               <th class="px-5 py-3.5 font-semibold">Category</th>
               <th class="px-5 py-3.5 font-semibold">Salary</th>
               <th class="px-5 py-3.5 font-semibold">Status</th>
-              <th class="px-5 py-3.5 font-semibold text-right">Actions</th>
+              <th class="px-5 py-4 text-right font-bold">Manage</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -365,20 +417,25 @@ onMounted(fetchJobPosts)
             <tr
               v-for="job in jobPosts"
               :key="job.id"
-              class="hover:bg-slate-100 dark:hover:bg-slate-800/30 transition-colors"
+              class="group transition-colors hover:bg-blue-50/40 dark:hover:bg-slate-800/40"
             >
               <td class="px-5 py-4">
-                <p class="font-semibold text-slate-900 dark:text-slate-100">{{ job.title }}</p>
-                <p class="text-xs text-slate-500 mt-0.5">{{ job.views_count }} views · {{ job.vacancies }} openings</p>
+                  <div class="flex min-w-56 items-start gap-3">
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"><Briefcase class="h-4 w-4" /></div>
+                  <div class="min-w-0">
+                    <p class="truncate font-bold text-slate-900 dark:text-slate-100">{{ job.title }}</p>
+                    <p class="mt-1 flex items-center gap-2 text-xs text-slate-500"><span>{{ job.views_count || 0 }} views</span><span class="text-slate-300">•</span><span>{{ job.vacancies || 0 }} openings</span></p>
+                  </div>
+                </div>
               </td>
-              <td class="px-5 py-4 text-slate-700 dark:text-slate-300">{{ job.company?.name || '—' }}</td>
-              <td class="px-5 py-4 text-slate-700 dark:text-slate-300">{{ job.city || job.location || '—' }}</td>
+              <td class="px-5 py-4"><div class="flex min-w-36 items-center gap-2 text-slate-700 dark:text-slate-300"><Building2 class="h-4 w-4 shrink-0 text-slate-400" />{{ job.company?.name || '—' }}</div></td>
+              <td class="px-5 py-4"><div class="flex min-w-30 items-center gap-2 text-slate-700 dark:text-slate-300"><MapPin class="h-4 w-4 shrink-0 text-slate-400" />{{ job.city || job.location || '—' }}</div></td>
               <td class="px-5 py-4 text-slate-700 dark:text-slate-300 capitalize">
                 {{ (job.job_type || '—').replace('_', ' ') }}
                 <span class="text-slate-500">·</span>
                 {{ (job.work_mode || '—').replace('_', ' ') }}
               </td>
-              <td class="px-5 py-4 text-slate-700 dark:text-slate-300">{{ job.category?.name || '—' }}</td>
+              <td class="px-5 py-4 text-slate-700 dark:text-slate-300"><span class="rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold dark:bg-slate-800">{{ job.category?.name || '—' }}</span></td>
               <td class="px-5 py-4 text-slate-700 dark:text-slate-300">
                 <span v-if="job.salary_min">
                   {{ job.salary_currency }} {{ job.salary_min }}<span v-if="job.salary_max"> – {{ job.salary_max }}</span>
@@ -467,7 +524,7 @@ onMounted(fetchJobPosts)
               <Briefcase class="w-5 h-5 text-blue-600 dark:text-blue-400" />
               {{ editingJob ? 'Edit Job Post' : 'New Job Post' }}
             </h3>
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{{ editingJob ? 'Update this job post and its publishing settings.' : 'Create a new job post for any company.' }}</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">{{ editingJob ? 'Update this job post and its publishing settings.' : (isCompanyScopedUser ? 'Create a job post for your company.' : 'Create a new job post for any company.') }}</p>
           </div>
           <button
             @click="closeModal"
@@ -493,7 +550,11 @@ onMounted(fetchJobPosts)
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 Company <span class="text-rose-600 dark:text-rose-400">*</span>
               </label>
-              <select
+              <div v-if="isCompanyScopedUser" class="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-sm font-semibold text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">
+                <Building2 class="h-4 w-4 shrink-0" />
+                {{ companies[0]?.name || 'Loading company...' }}
+              </div>
+              <select v-else
                 v-model="form.company_id"
                 class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500"
               >

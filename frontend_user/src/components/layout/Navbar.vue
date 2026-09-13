@@ -19,6 +19,9 @@ const adminDashboardUrl = computed(() => {
   return url.toString()
 })
 
+const canAccessDashboard = computed(() => {
+  return ['admin', 'hr', 'company'].includes(user?.value?.role)
+})
 
 const handleLogout = async () => {
   mobileOpen.value = false
@@ -105,6 +108,15 @@ const isActive = (path) => route.path === path || route.path.startsWith(path + '
             </router-link>
           </template>
           <template v-else>
+            <a
+              v-if="canAccessDashboard"
+              :href="adminDashboardUrl"
+              class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-white transition-all duration-200"
+              title="Open Dashboard"
+            >
+              <ShieldCheck class="w-4 h-4" />
+              <span>Dashboard</span>
+            </a>
             <router-link
               to="/profile"
               class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition-all duration-200"
@@ -178,6 +190,14 @@ const isActive = (path) => route.path === path || route.path.startsWith(path + '
             </router-link>
           </template>
           <template v-else>
+            <a
+              v-if="canAccessDashboard"
+              :href="adminDashboardUrl"
+              @click="mobileOpen = false"
+              class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-sm font-bold transition-all"
+            >
+              <ShieldCheck class="w-4 h-4" /> Dashboard
+            </a>
             <router-link to="/profile" @click="mobileOpen = false"
               class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all">
               <div class="w-8 h-8 rounded-full overflow-hidden bg-blue-600 text-white text-xs font-black flex items-center justify-center shrink-0">

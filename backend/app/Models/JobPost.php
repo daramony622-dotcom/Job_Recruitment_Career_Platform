@@ -158,11 +158,54 @@ class JobPost extends Model
                 $q->where(function ($sub) use ($search) {
                     $sub->where('title', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%")
-                        ->orWhereHas('company', fn($comp) => $comp->where('name', 'like', "%{$search}%"));
+                        ->orWhere('requirements', 'like', "%{$search}%")
+                        ->orWhereHas('company', fn($comp) => $comp->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('category', fn($cat) => $cat->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('skills', fn($sk) => $sk->where('name', 'like', "%{$search}%")->orWhere('category', 'like', "%{$search}%"));
+                });
+            })
+            ->when($filters['category'] ?? null, function ($q, $category) {
+                $q->where(function ($sub) use ($category) {
+                    $sub->whereHas('category', function ($cat) use ($category) {
+                        $cat->where('slug', $category)
+                            ->orWhere('name', 'like', "%{$category}%");
+                    })
+                    ->orWhereHas('skills', function ($sk) use ($category) {
+                        $sk->where('category', 'like', "%{$category}%")
+                           ->orWhere('slug', $category)
+                           ->orWhere('name', 'like', "%{$category}%")
+                           ->orWhereHas('skillCategory', function ($sc) use ($category) {
+                               $sc->where('slug', $category)
+                                  ->orWhere('name', 'like', "%{$category}%");
+                           });
+                    });
                 });
             })
             ->when($filters['category_id'] ?? null, function ($q, $categoryId) {
-                $q->where('category_id', $categoryId);
+                $q->where(function ($sub) use ($categoryId) {
+                    $sub->where('category_id', $categoryId)
+                        ->orWhereHas('skills', function ($sk) use ($categoryId) {
+                            $sk->where('category_id', $categoryId);
+                        });
+                });
+            })
+            ->when($filters['skill_category_id'] ?? null, function ($q, $scId) {
+                $q->whereHas('skills', fn($sk) => $sk->where('category_id', $scId));
+            })
+            ->when($filters['skill_category'] ?? null, function ($q, $sc) {
+                $q->whereHas('skills', function ($sk) use ($sc) {
+                    $sk->where('category', 'like', "%{$sc}%")
+                       ->orWhereHas('skillCategory', fn($c) => $c->where('slug', $sc)->orWhere('name', 'like', "%{$sc}%"));
+                });
+            })
+            ->when($filters['skill'] ?? null, function ($q, $skill) {
+                $q->whereHas('skills', function ($sk) use ($skill) {
+                    $sk->where('slug', $skill)
+                       ->orWhere('name', 'like', "%{$skill}%");
+                });
+            })
+            ->when($filters['skill_id'] ?? null, function ($q, $skillId) {
+                $q->whereHas('skills', fn($sk) => $sk->where('skills.id', $skillId));
             })
             ->when($filters['job_type'] ?? null, function ($q, $jobType) {
                 $q->where('job_type', $jobType);
@@ -175,6 +218,25 @@ class JobPost extends Model
             })
             ->when($filters['city'] ?? null, function ($q, $city) {
                 $q->where('city', 'like', "%{$city}%");
+            })
+            ->when($filters['location'] ?? null, function ($q, $location) {
+                $q->where(function ($sub) use ($location) {
+                    $sub->where('location', 'like', "%{$location}%")
+                        ->orWhere('city', 'like', "%{$location}%")
+                        ->orWhere('country', 'like', "%{$location}%");
+                });
+            })
+            ->when($filters['salary_min'] ?? null, function ($q, $min) {
+                $q->where(function ($sub) use ($min) {
+                    $sub->where('salary_max', '>=', $min)
+                        ->orWhere('salary_min', '>=', $min);
+                });
+            })
+            ->when($filters['salary_max'] ?? null, function ($q, $max) {
+                $q->where('salary_min', '<=', $max);
+            })
+            ->when(isset($filters['is_featured']), function ($q) use ($filters) {
+                $q->where('is_featured', (bool) $filters['is_featured']);
             });
     }
 

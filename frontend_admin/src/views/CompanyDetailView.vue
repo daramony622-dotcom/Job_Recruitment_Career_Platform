@@ -12,9 +12,12 @@ import {
   BadgeCheck,
   ShieldCheck,
   CircleDot,
+  Mail,
+  Phone,
 } from 'lucide-vue-next'
 import { adminApi } from '../api'
 import { gradientSeed } from '../data/companies'
+import { resolveMediaUrl } from '../utils/media'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,6 +25,9 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref('')
 const company = ref(null)
+
+const logoUrl = computed(() => resolveMediaUrl(company.value?.logo))
+const coverUrl = computed(() => resolveMediaUrl(company.value?.cover_image))
 
 async function fetchCompany() {
   loading.value = true
@@ -67,9 +73,9 @@ const detailCards = computed(() => [
   },
   {
     label: 'Open Positions',
-    value: company.value?.jobs?.length || 0,
-    sub: (company.value?.jobs?.length || 0) > 0 ? 'Roles hiring now' : 'No openings',
-    pill: (company.value?.jobs?.length || 0) > 0,
+    value: company.value?.open_jobs_count || 0,
+    sub: (company.value?.open_jobs_count || 0) > 0 ? 'Roles hiring now' : 'No openings',
+    pill: (company.value?.open_jobs_count || 0) > 0,
     icon: Briefcase,
     iconClass: 'bg-blue-500/15 text-blue-400',
   },
@@ -85,14 +91,14 @@ const detailCards = computed(() => [
 ])
 
 const coverBackground = computed(() => {
-  if (company.value?.cover_image) return ''
+  if (coverUrl.value) return ''
   const seed = Number(company.value?.id || 0)
   return gradientSeed[seed % gradientSeed.length]
 })
 
 const logoBackground = computed(() => {
   const seed = Number(company.value?.id || 0)
-  return company.value?.logo ? '' : gradientSeed[seed % gradientSeed.length]
+  return logoUrl.value ? '' : gradientSeed[seed % gradientSeed.length]
 })
 
 onMounted(fetchCompany)
@@ -109,21 +115,23 @@ onMounted(fetchCompany)
     </p>
   </div>
 
-  <div class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto" v-else-if="company">
+  <div class="min-h-full bg-slate-50/70 p-4 sm:p-6 lg:p-8 dark:bg-slate-950/30" v-else-if="company">
+    <div class="mx-auto max-w-6xl">
     <!-- Back navigation -->
     <button
-      class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mb-6 transition-colors group"
+      class="group mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400"
       @click="router.push('/companies')"
     >
       <ArrowLeft class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
       Back to Companies Directory
     </button>
 
+    <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
     <!-- ===== Cover banner (real cover photo + dark overlay) ===== -->
-    <div class="relative h-52 sm:h-64 lg:h-72 rounded-3xl overflow-hidden shadow-md">
+    <div class="relative h-52 overflow-hidden bg-slate-100 dark:bg-slate-800 sm:h-56 lg:h-60">
       <img
-        v-if="company.cover_image"
-        :src="company.cover_image"
+        v-if="coverUrl"
+        :src="coverUrl"
         :alt="`${company.name} cover`"
         class="w-full h-full object-cover"
       />
@@ -132,53 +140,39 @@ onMounted(fetchCompany)
         class="w-full h-full"
         :style="{ background: coverBackground }"
       ></div>
-      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/5"></div>
-      <!-- Verified Company Profile badge -->
-      <div class="absolute top-4 right-4 z-20">
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold shadow-lg backdrop-blur-sm">
-          <ShieldCheck class="w-4 h-4" />
-          VERIFIED COMPANY PROFILE
-        </span>
-      </div>
+      <div class="absolute inset-0 bg-linear-to-t from-slate-950/80 via-slate-950/25 to-transparent"></div>
     </div>
 
-    <!-- ===== Floating profile card (overlaps banner) ===== -->
-    <div class="relative -mt-20 sm:-mt-24 z-10 mx-4 sm:mx-8">
+    <!-- ===== Profile row (overlaps banner like frontend_user) ===== -->
+    <div class="relative z-10 -mt-10 px-6 pb-7 sm:-mt-11 sm:px-8">
       <div
-        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl p-6 sm:p-8"
+        class="relative rounded-none border-0 bg-transparent p-0 shadow-none sm:pl-36"
       >
-        <div class="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
+        <div class="flex flex-col gap-5 sm:block">
           <!-- Company logo -->
-          <div
-            class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 overflow-hidden shadow-lg flex items-center justify-center text-3xl sm:text-4xl font-black text-white"
-          >
+          <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-lg ring-4 ring-white dark:border-slate-700 dark:bg-slate-800 dark:ring-slate-900 sm:absolute sm:-left-6 sm:-top-6 sm:h-28 sm:w-28">
             <img
-              v-if="company.logo"
-              :src="company.logo"
+              v-if="logoUrl"
+              :src="logoUrl"
               :alt="company.name"
-              class="w-full h-full object-cover"
+              class="h-full w-full object-contain"
             />
             <template v-else>
-              <div class="w-full h-full flex items-center justify-center" :style="{ background: logoBackground }">
-                {{ company.name.charAt(0) }}
+              <div class="flex h-full w-full items-center justify-center rounded-xl text-3xl font-black text-white" :style="{ background: logoBackground }">
+                {{ (company.name || 'C').charAt(0) }}
               </div>
             </template>
           </div>
 
-          <div class="min-w-0 flex-1">
+          <div class="min-w-0 sm:pr-60">
             <div class="flex flex-wrap items-center gap-2.5">
-              <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white truncate">
+              <h2 class="truncate text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
                 {{ company.name }}
               </h2>
-              <span
-                v-if="company.is_verified"
-                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-              >
-                <BadgeCheck class="w-3.5 h-3.5" /> Verified Platform Employer
-              </span>
+              <BadgeCheck v-if="company.is_verified" class="h-5 w-5 text-blue-600" title="Verified Employer" />
             </div>
-            <p class="text-blue-600 dark:text-blue-400 font-medium mt-1.5">{{ company.industry }}</p>
-            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 inline-flex items-center gap-1.5">
+            <p class="mt-1.5 font-semibold text-blue-600 dark:text-blue-400">{{ company.industry || 'Company profile' }}</p>
+            <p class="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
               <MapPin class="w-3.5 h-3.5" />
               {{ company.city || '—' }}{{ company.city && company.country ? ', ' : '' }}{{ company.country || '' }}
             </p>
@@ -189,7 +183,7 @@ onMounted(fetchCompany)
             :href="company.website"
             target="_blank"
             rel="noopener"
-            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shrink-0"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 sm:absolute sm:right-7 sm:top-1/2 sm:-translate-y-1/2"
             v-if="company.website"
           >
             <Globe class="w-4 h-4" />
@@ -198,14 +192,12 @@ onMounted(fetchCompany)
         </div>
 
         <!-- Description -->
-        <p class="mt-6 text-slate-700 dark:text-slate-300 leading-relaxed text-[15px] max-w-3xl">
-          {{ company.description || 'No company description added yet.' }}
-        </p>
       </div>
+    </div>
     </div>
 
     <!-- ===== Metric cards (4-column grid) ===== -->
-    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div
         v-for="card in detailCards"
         :key="card.label"
@@ -265,8 +257,23 @@ onMounted(fetchCompany)
       </span>
     </div>
 
+    <div class="mt-6 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">About {{ company.name }}</h3>
+        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{{ company.description || 'No company description added yet.' }}</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">Contact details</h3>
+        <div class="mt-3 space-y-3 text-sm text-slate-600 dark:text-slate-400">
+          <p v-if="company.email" class="inline-flex items-center gap-2"><Mail class="h-4 w-4 text-blue-500" />{{ company.email }}</p>
+          <p v-if="company.phone" class="inline-flex items-center gap-2"><Phone class="h-4 w-4 text-blue-500" />{{ company.phone }}</p>
+          <p v-if="!company.email && !company.phone">No contact details added yet.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== Active Openings Section ===== -->
-    <div class="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8">
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7">
       <div class="flex items-center justify-between mb-6">
         <div>
           <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2.5">
@@ -279,7 +286,7 @@ onMounted(fetchCompany)
         </div>
         <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold">
           <Building2 class="w-4 h-4" />
-          {{ company.jobs?.length || 0 }} Openings
+          {{ company.open_jobs_count || 0 }} Openings
         </span>
       </div>
 
@@ -315,6 +322,7 @@ onMounted(fetchCompany)
         <p class="font-medium text-slate-700 dark:text-slate-300">No active openings</p>
         <p class="text-sm mt-1">There are currently no job openings for this company.</p>
       </div>
+    </div>
     </div>
   </div>
 

@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 
 class CompanyProfileController extends Controller
 {
+    private const PROFILE_NOT_FOUND = 'Company profile not found.';
+
     public function __construct(private readonly CompanyService $companyService)
     {
         
@@ -22,7 +24,7 @@ class CompanyProfileController extends Controller
         $company = $request->user()->company;
 
         if (!$company) {
-            return response()->json(['message' => 'Company profile not found.'], 404);
+            return response()->json(['message' => self::PROFILE_NOT_FOUND], 404);
         }
 
         return response()->json(['data' => $company]);
@@ -49,7 +51,7 @@ class CompanyProfileController extends Controller
         $company = $request->user()->company;
 
         if (!$company) {
-            return response()->json(['message' => 'Company profile not found.'], 404);
+            return response()->json(['message' => self::PROFILE_NOT_FOUND], 404);
         }
 
         $updated = $this->companyService->update($request->validated(), $company);
@@ -58,5 +60,18 @@ class CompanyProfileController extends Controller
             'message' => 'Company profile updated successfully.',
             'data'    => $updated,
         ]);
+    }
+
+    public function destroy(Request $request): JsonResponse
+    {
+        $company = $request->user()->company;
+
+        if (!$company) {
+            return response()->json(['message' => self::PROFILE_NOT_FOUND], 404);
+        }
+
+        $company->delete();
+
+        return response()->json(['message' => 'Company profile deleted successfully.']);
     }
 }

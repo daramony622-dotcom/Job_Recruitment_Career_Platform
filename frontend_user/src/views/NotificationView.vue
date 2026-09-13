@@ -9,7 +9,6 @@ import {
   ChevronDown, RefreshCcw, Inbox, Clock, Circle
 } from 'lucide-vue-next'
 
-// ─── Mock Notification Data (matches schema) ──────────────────────────────────
 const notifications = ref([
   {
     id: 'a1b2c3d4-0001-0001-0001-000000000001',
@@ -121,6 +120,8 @@ const notifications = ref([
   }
 ])
 
+notifications.value = []
+
 // ─── Filter State ─────────────────────────────────────────────────────────────
 const activeFilter = ref('all')
 const activeChannel = ref('all')
@@ -161,11 +162,13 @@ const unreadCount = computed(() => notifications.value.filter(n => !n.read_at).l
 const loadNotifications = async () => {
   try {
     const response = await api.listNotifications()
-    if (Array.isArray(response.data)) {
-      notifications.value = response.data
+    notifications.value = Array.isArray(response) ? response : []
+  } catch (error) {
+    if (error?.message?.includes('Unauthenticated')) {
+      window.location.href = '/login'
+      return
     }
-  } catch {
-    // Keep the local fallback when the API is unavailable.
+    notifications.value = []
   }
 }
 
@@ -183,11 +186,25 @@ const markAsRead = async (id) => {
 
 const markAllRead = async () => {
   const unread = notifications.value.filter(n => !n.read_at)
-  await Promise.all(unread.map(n => markAsRead(n.id)))
+  if (!unread.length) return
+  try {
+    await api.markAllNotificationsRead()
+    notifications.value = notifications.value.map((notification) => ({
+      ...notification,
+      read_at: notification.read_at || new Date().toISOString(),
+    }))
+  } catch {
+    await Promise.all(unread.map(n => markAsRead(n.id)))
+  }
 }
 
-const deleteNotification = (id) => {
-  notifications.value = notifications.value.filter(n => n.id !== id)
+const deleteNotification = async (id) => {
+  try {
+    await api.deleteNotification(id)
+    notifications.value = notifications.value.filter(n => n.id !== id)
+  } catch {
+    // Keep the notification visible when the server rejects the delete.
+  }
 }
 
 const refresh = async () => {
@@ -241,7 +258,7 @@ onMounted(loadNotifications)
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Notifications
             </h1>
-            <span v-if="unreadCount > 0" class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-xs font-bold min-w-[24px]">
+            <span v-if="unreadCount > 0" class="inline-flex min-w-6 items-center justify-center rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-bold text-white">
               {{ unreadCount }}
             </span>
           </div>

@@ -30,8 +30,13 @@ Route::prefix('auth')->group(function () {
 
 // Public job search used by the jobs and companies browsing screens.
 Route::get('jobs/search', [\App\Http\Controllers\Api\JobSeeker\JobSearchController::class, 'index']);
+Route::get('jobs/{jobPost}', [\App\Http\Controllers\Api\JobSeeker\JobSearchController::class, 'show']);
+Route::get('categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+Route::get('skill-categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
+Route::get('skills', [\App\Http\Controllers\Api\CategoryController::class, 'skills']);
 Route::get('companies', [\App\Http\Controllers\Api\CompanyController::class, 'index']);
 Route::get('companies/{company}', [\App\Http\Controllers\Api\CompanyController::class, 'show']);
+Route::middleware('auth:sanctum')->post('contact', [\App\Http\Controllers\Api\ContactController::class, 'submit']);
 
 // Admin Routes File Loader (Prefix & Middleware handled here)
 Route::middleware(['auth:sanctum', 'role:admin'])
@@ -44,6 +49,6 @@ Route::middleware(['auth:sanctum', 'role:hr,company,admin'])
     ->group(base_path('routes/company.php'));
 
 // Jobseeker/User Routes File Loader
-Route::middleware(['auth:sanctum', 'role:user,job_seeker,admin'])
+Route::middleware(['auth:sanctum', 'role:user,job_seeker,hr,company,admin'])
     ->prefix('user')
     ->group(base_path('routes/jobseeker.php'));

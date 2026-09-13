@@ -121,6 +121,34 @@ class AuthenticationTest extends TestCase
             ->assertJson(['message' => 'Logged out.']);
     }
 
+    public function test_contact_submission_requires_authenticated_user(): void
+    {
+        $payload = [
+            'name' => 'Contact Tester',
+            'email' => 'contact@example.com',
+            'phone' => '+85512345678',
+            'subject_type' => 'general',
+            'subject' => 'Test subject',
+            'message' => 'This is a test message.',
+        ];
+
+        $this->postJson('/api/contact', $payload)
+            ->assertUnauthorized();
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/contact', $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.user_id', $user->id);
+
+        $this->assertDatabaseHas('contact_messages', [
+            'user_id' => $user->id,
+            'email' => 'contact@example.com',
+            'subject' => 'Test subject',
+        ]);
+    }
+
     public function test_google_auth_redirect_returns_json_or_redirect(): void
     {
         $response = $this->getJson('/api/auth/google');

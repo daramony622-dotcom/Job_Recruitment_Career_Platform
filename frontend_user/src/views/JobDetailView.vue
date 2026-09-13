@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Navbar from '../components/layout/Navbar.vue'
 import Footer from '../components/layout/Footer.vue'
@@ -9,66 +9,66 @@ import {
   Users, CheckCircle2, Share2, Sparkles,
   GraduationCap, ShieldCheck, ShieldAlert, Navigation, Compass
 } from 'lucide-vue-next'
+import { useAuth, resolveAssetUrl } from '../composables/useAuth'
+import { useJobSeekerApi } from '../composables/useJobSeekerApi'
 
 const route = useRoute()
 const router = useRouter()
+const { isAuthenticated } = useAuth()
+const { request, listSavedJobs, saveJob, removeSavedJob, applyToJob } = useJobSeekerApi()
 
 const isBookmarked = ref(false)
 const isApplied = ref(false)
 const showShareSuccess = ref(false)
+const loading = ref(true)
+const error = ref('')
+const savedJobId = ref(null)
+const submittingApplication = ref(false)
 
-// Sample Job Model matching database schema
-const job = ref({
-  id: route.params.id || 1,
-  company_id: 101,
-  category_id: 1,
-  category_name: 'Software Engineering',
-  company_name: 'TechMatrix Global',
-  company_logo: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=150&h=150&fit=crop',
-  title: 'Senior Full Stack Laravel & Vue.js Developer',
-  slug: 'senior-full-stack-laravel-vue-developer',
-  description: `We are seeking an experienced Senior Full Stack Developer proficient in Laravel and Vue.js to join our core engineering team. You will lead the architectural design and development of our next-generation career and recruitment platform.`,
-  requirements: [
-    '4+ years of professional experience with Laravel ecosystem and Vue 3 (Composition API).',
-    'Solid understanding of HTML5, CSS3, Tailwind CSS, JavaScript (ES6+), and TypeScript.',
-    'Demonstrated experience with MySQL/PostgreSQL relational databases, Redis caching, and WebSockets.'
-  ],
-  benefits: [
-    'Competitive Salary package ($1,200 - $2,200 USD).',
-    '13th-month salary bonus & annual performance bonus.',
-    'Full Senior Health & Dental Insurance coverage.',
-    'Flexible Hybrid work model with workstation stipend.'
-  ],
-  job_type: 'full_time',
-  work_mode: 'hybrid',
-  experience_level: 'senior',
-  location: 'Monivong Blvd, Khan Daun Penh',
-  city: 'Phnom Penh',
-  country: 'Cambodia',
-  salary_min: 1200.00,
-  salary_max: 2200.00,
-  salary_currency: 'USD',
-  salary_period: 'monthly',
-  is_salary_visible: true,
-  vacancies: 3,
-  deadline: '2026-04-30',
-  status: 'published',
-  is_featured: true,
-  views_count: 542,
-  published_at: '2026-09-01T08:00:00Z',
-  company_info: {
-    name: 'TechMatrix Global',
-    industry: 'Software & Information Technology',
-    employees: '50 - 200 Employees',
-    founded: '2019',
-    website: 'https://techmatrix.example.com',
-    about: 'TechMatrix Global is a leading software innovation hub building digital platforms across Southeast Asia.'
+const job = ref({})
+
+function normalizeJob(data) {
+  const source = data?.data && !Array.isArray(data.data) ? data.data : data
+  if (!source || typeof source !== 'object') return null
+  const company = source.company || {}
+  const category = source.category || {}
+  return {
+    ...source,
+    company_name: company.name || 'Employer',
+    company_logo: resolveAssetUrl(company.logo),
+    category_name: category.name || '',
+    company_info: {
+      name: company.name,
+      industry: company.industry,
+      employees: company.company_size,
+      founded: company.founded_year,
+      website: company.website,
+      about: company.description,
+    },
   }
-})
+}
+
+async function fetchJob() {
+  loading.value = true
+  try {
+    const response = await request(`/jobs/${route.params.id}`)
+    job.value = normalizeJob(response.data || response)
+    if (isAuthenticated.value) {
+      const savedResponse = await listSavedJobs()
+      const saved = (savedResponse?.data || savedResponse || []).find((item) => Number(item.job_post_id) === Number(job.value.id))
+      savedJobId.value = saved?.id || null
+      isBookmarked.value = Boolean(saved)
+    }
+  } catch (requestError) {
+    error.value = requestError.message || 'Unable to load this job.'
+  } finally {
+    loading.value = false
+  }
+}
 
 // Helper: Salary Formatting
 const formatSalary = (jobObj) => {
-  if (!jobObj.is_salary_visible) return 'Negotiable'
+  if (!jobObj || !jobObj.is_salary_visible) return 'Negotiable'
   const min = Number(jobObj.salary_min).toLocaleString()
   const max = Number(jobObj.salary_max).toLocaleString()
   const period = jobObj.salary_period ? jobObj.salary_period.replace('ly', '') : 'month'
@@ -81,13 +81,37 @@ const formatEnum = (val) => {
   return val.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
-const toggleBookmark = () => {
-  isBookmarked.value = !isBookmarked.value
+const toggleBookmark = async () => {
+  if (!isAuthenticated.value) {
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  if (savedJobId.value) {
+    await removeSavedJob(savedJobId.value)
+    savedJobId.value = null
+    isBookmarked.value = false
+  } else {
+    const response = await saveJob(job.value.id)
+    const saved = response?.data || response
+    savedJobId.value = saved.id
+    isBookmarked.value = true
+  }
 }
 
-const handleApply = () => {
-  isApplied.value = true
-  setTimeout(() => { isApplied.value = false }, 3500)
+const handleApply = async () => {
+  if (!isAuthenticated.value) {
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  submittingApplication.value = true
+  try {
+    await applyToJob(job.value.id)
+    isApplied.value = true
+  } catch (requestError) {
+    error.value = requestError.message || 'Unable to submit your application.'
+  } finally {
+    submittingApplication.value = false
+  }
 }
 
 const copyShareLink = () => {
@@ -95,6 +119,8 @@ const copyShareLink = () => {
   showShareSuccess.value = true
   setTimeout(() => { showShareSuccess.value = false }, 2500)
 }
+
+onMounted(fetchJob)
 </script>
 
 <template>
@@ -102,6 +128,9 @@ const copyShareLink = () => {
     <Navbar />
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div v-if="loading" class="py-24 text-center text-sm font-semibold text-slate-500">Loading job details...</div>
+      <div v-else-if="error" class="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700">{{ error }}</div>
+      <template v-else-if="job">
       
       <!-- Back Navigation Button -->
       <button 
@@ -132,7 +161,7 @@ const copyShareLink = () => {
             />
             <div 
               v-else 
-              class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/50 font-extrabold text-xl"
+              class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-800 font-extrabold text-xl"
             >
               {{ job.company_name?.charAt(0) || 'C' }}
             </div>
@@ -203,7 +232,7 @@ const copyShareLink = () => {
 
             <button 
               @click="handleApply" 
-              :disabled="isApplied" 
+              :disabled="isApplied || submittingApplication" 
               class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl text-xs transition shadow-md shadow-blue-500/20 active:scale-95 disabled:opacity-80 cursor-pointer"
             >
               <CheckCircle2 v-if="isApplied" class="w-4 h-4 text-emerald-300" />
@@ -215,6 +244,7 @@ const copyShareLink = () => {
         </div>
 
       </div>
+      </template>
 
       <!-- Main Grid: Specifications, Description & Sidebar -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

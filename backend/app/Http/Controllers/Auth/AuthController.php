@@ -32,12 +32,12 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Email verified.',
-            'user' => $user,
-            'token' => $token,
+            'message'      => 'Email verified.',
+            'user'         => $user,
+            'token'        => $token,
+            'redirect_url' => $this->getRoleRedirectUrl($user),
         ]);
     }
-
 
     public function resendOtp(ResendOtpRequest $request)
     {
@@ -55,10 +55,12 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         $result = $this->authService->login($request->email, $request->password);
+        $user = $result['user'];
 
         return response()->json([
-            'user' => $result['user'],
-            'token' => $result['token'],
+            'user'         => $user,
+            'token'        => $result['token'],
+            'redirect_url' => $this->getRoleRedirectUrl($user),
         ]);
     }
 
@@ -83,5 +85,23 @@ class AuthController extends Controller
         $this->authService->resetPassword($request->email, $request->code, $request->password);
 
         return response()->json(['message' => 'Password has been reset. You can now log in.']);
+    }
+
+    /**
+     * Determine the correct target redirect URL/path based on user roles.
+     */
+    protected function getRoleRedirectUrl($user): string
+    {
+        // Check if user model uses Spatie permissions or a simple 'role' attribute
+        $role = method_exists($user, 'getRoleNames') 
+            ? $user->getRoleNames()->first() 
+            : ($user->role ?? 'user');
+
+        return match ($role) {
+            'admin'              => '/admin/dashboard',
+            'hr', 'company'      => '/company/dashboard',
+            'user', 'job_seeker' => '/user/dashboard',
+            default              => '/user/dashboard',
+        };
     }
 }

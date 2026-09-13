@@ -15,7 +15,7 @@ class JobPostPolicy
      */
     public function viewAny(User $user): bool
     {
-        // Admin sees all; HR users see their own company's posts
+        // Admin and HR users see the complete job-post catalogue.
         return $user->isAdmin() || $user->isHr();
     }
 
@@ -24,7 +24,9 @@ class JobPostPolicy
      */
     public function view(User $user, JobPost $jobPost): bool
     {
-        return $user->isAdmin() || ($user->company && $user->company->id === $jobPost->company_id);
+        return $user->isAdmin()
+            || $user->role === 'hr'
+            || ($user->company && $user->company->id === $jobPost->company_id);
     }
 
     /**
@@ -41,7 +43,9 @@ class JobPostPolicy
      */
     public function update(User $user, JobPost $jobPost): bool
     {
-        return $user->isAdmin() || ($user->company && $user->company->id === $jobPost->company_id);
+        return $user->isAdmin()
+            || $user->role === 'hr'
+            || ($user->company && $user->company->id === $jobPost->company_id);
     }
 
     /**
@@ -49,7 +53,9 @@ class JobPostPolicy
      */
     public function delete(User $user, JobPost $jobPost): bool
     {
-        return $user->isAdmin() || ($user->company && $user->company->id === $jobPost->company_id);
+        return $user->isAdmin()
+            || $user->role === 'hr'
+            || ($user->company && $user->company->id === $jobPost->company_id);
     }
 
     /**
@@ -57,13 +63,15 @@ class JobPostPolicy
      */
     public function restore(User $user, JobPost $jobPost): bool
     {
-        return $user->isAdmin() || ($user->company && $user->company->id === $jobPost->company_id);
+        return $user->isAdmin()
+            || $user->role === 'hr'
+            || ($user->company && $user->company->id === $jobPost->company_id);
     }
 
     /**
      * Determine whether the user can permanently delete a job post.
      */
-    public function forceDelete(User $user, JobPost $jobPost): bool
+    public function forceDelete(User $user): bool
     {
         return $user->isAdmin();
     }

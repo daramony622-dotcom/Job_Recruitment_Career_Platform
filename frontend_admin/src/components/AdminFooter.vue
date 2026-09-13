@@ -27,23 +27,20 @@ const toneClasses = {
 </script>
 
 <template>
-  <footer class="border-t border-slate-800 bg-slate-900 px-4 sm:px-6 py-4 mt-auto">
-    <div class="mx-auto max-w-7xl flex flex-col lg:flex-row items-center justify-between gap-4 text-center lg:text-left">
-      
-      <!-- Logo & Copyright -->
+  <footer class="admin-footer mt-auto border-t border-slate-200 bg-white px-4 py-4 sm:px-6 dark:border-slate-800 dark:bg-[#101a29]">
+    <div class="mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-4 text-center lg:flex-row lg:text-left">
       <div class="flex items-center gap-3">
-        <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white shadow-lg shadow-slate-900/10 ring-1 ring-slate-900/10 dark:bg-blue-500 dark:shadow-blue-500/20">
           <Briefcase class="w-4 h-4" />
         </div>
         <div>
-          <span class="text-sm font-bold text-white tracking-wide">Job Search</span>
-          <p class="text-xs text-slate-500">© 2026 All rights reserved.</p>
+          <div class="text-sm font-extrabold tracking-[0.08em] text-slate-900 dark:text-white">JOB SEARCH</div>
+          <p class="text-[11px] text-slate-400">© 2026 All rights reserved.</p>
         </div>
       </div>
 
-      <!-- Status Badge -->
-      <span class="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-950 px-3 py-1 text-xs text-slate-400">
-        <ShieldCheck class="w-3.5 h-3.5 text-slate-500" />
+      <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+        <ShieldCheck class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-300" />
         <span class="relative flex items-center gap-1.5">
           <span class="relative flex h-1.5 w-1.5">
             <span
@@ -59,13 +56,12 @@ const toneClasses = {
         </span>
       </span>
 
-      <!-- Links -->
       <nav class="flex items-center gap-4">
         <a
           v-for="link in links"
           :key="link.label"
           :href="link.to"
-          class="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+          class="text-[11px] font-medium text-slate-500 transition-colors hover:text-blue-600 dark:text-slate-400 dark:hover:text-white"
         >
           {{ link.label }}
         </a>

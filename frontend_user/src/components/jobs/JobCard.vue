@@ -1,12 +1,18 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
   MapPin, DollarSign, Calendar, Eye, 
   Bookmark, Send, Sparkles, Users, ShieldAlert, Building2
 } from 'lucide-vue-next'
+import { useAuth, resolveAssetUrl } from '../../composables/useAuth'
+import { useJobSeekerApi } from '../../composables/useJobSeekerApi'
 
 const router = useRouter()
+const { isAuthenticated } = useAuth()
+const { listSavedJobs, saveJob, removeSavedJob } = useJobSeekerApi()
+const savedJobs = ref(new Map())
+const savingJobId = ref(null)
 
 const props = defineProps({
   jobPosts: {
@@ -14,6 +20,11 @@ const props = defineProps({
     default: null
   }
 })
+
+const getCompanyLogo = (job) => {
+  const logo = job.company_logo || job.company?.logo
+  return resolveAssetUrl(logo)
+}
 
 // Sample fallback mock matching the exact database schema
 const defaultJobPosts = [
@@ -109,7 +120,18 @@ const defaultJobPosts = [
   }
 ]
 
-const activePosts = computed(() => props.jobPosts || defaultJobPosts)
+const activePosts = computed(() => props.jobPosts || [])
+
+onMounted(async () => {
+  if (!isAuthenticated.value) return
+  try {
+    const response = await listSavedJobs()
+    const items = response?.data || response || []
+    savedJobs.value = new Map(items.map((item) => [Number(item.job_post_id), item.id]))
+  } catch {
+    savedJobs.value = new Map()
+  }
+})
 
 // Helper: Format Salary String
 const formatSalary = (job) => {
@@ -160,6 +182,29 @@ const workModeBadgeStyle = (mode) => {
 const goToDetail = (id) => {
   router.push(`/jobs/${id}`)
 }
+
+const toggleSaved = async (job) => {
+  if (!isAuthenticated.value) {
+    router.push({ path: '/login', query: { redirect: `/jobs/${job.id}` } })
+    return
+  }
+
+  savingJobId.value = job.id
+  try {
+    const savedId = savedJobs.value.get(Number(job.id))
+    if (savedId) {
+      await removeSavedJob(savedId)
+      savedJobs.value.delete(Number(job.id))
+    } else {
+      const response = await saveJob(job.id)
+      const saved = response?.data || response
+      savedJobs.value.set(Number(job.id), saved.id)
+    }
+    savedJobs.value = new Map(savedJobs.value)
+  } finally {
+    savingJobId.value = null
+  }
+}
 </script>
 
 <template>
@@ -180,14 +225,14 @@ const goToDetail = (id) => {
         <!-- Company Image / Logo Avatar -->
         <div class="shrink-0 mt-0.5">
           <img 
-            v-if="job.company_logo" 
-            :src="job.company_logo" 
+            v-if="getCompanyLogo(job)" 
+            :src="getCompanyLogo(job)" 
             :alt="job.company_name" 
-            class="w-14 h-14 rounded-2xl object-cover border border-slate-200/80 dark:border-slate-700/80 shadow-2xs group-hover:scale-105 transition transform duration-200"
+            class="w-14 h-14 rounded-2xl object-contain bg-white p-1 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs group-hover:scale-105 transition transform duration-200"
           />
           <div 
             v-else 
-            class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-extrabold text-base flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition transform duration-200"
+            class="w-14 h-14 rounded-2xl bg-linear-to-br from-blue-600 to-indigo-700 text-white font-extrabold text-base flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition transform duration-200"
           >
             {{ getCompanyInitial(job.company_name) }}
           </div>
@@ -258,12 +303,15 @@ const goToDetail = (id) => {
 
       <!-- Right: Action Buttons -->
       <div class="flex items-center gap-2 w-full md:w-auto justify-end pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800 shrink-0">
-        <button 
-          type="button" 
-          class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl border border-slate-200 dark:border-slate-700 transition cursor-pointer" 
+        <button
+          type="button"
+          @click="toggleSaved(job)"
+          :disabled="savingJobId === job.id"
+          class="p-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+          :class="savedJobs.has(Number(job.id)) ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300' : ''"
           title="Save Job"
         >
-          <Bookmark class="w-4.5 h-4.5" />
+          <Bookmark class="w-4.5 h-4.5" :class="savedJobs.has(Number(job.id)) ? 'fill-current' : ''" />
         </button>
         <button 
           @click="goToDetail(job.id)"
@@ -271,7 +319,7 @@ const goToDetail = (id) => {
           class="flex-1 md:flex-initial flex items-center justify-center gap-1.5 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold transition shadow-md shadow-blue-500/20 active:scale-95 cursor-pointer"
         >
           <Send class="w-3.5 h-3.5" />
-          <span>Apply Now</span>
+          <span>View & Apply</span>
         </button>
       </div>
 

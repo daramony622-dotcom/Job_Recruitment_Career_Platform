@@ -7,7 +7,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,10 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Prevent redirects on API routes when unauthenticated
         $middleware->redirectGuestsTo(function (Request $request) {
             return $request->is('api/*') ? null : route('login');
         });
 
+        // Ensure Sanctum handles API requests cleanly
+        $middleware->statefulApi();
+
+        // Register custom middleware aliases
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'verified.otp' => AuthMiddleware::class,
@@ -28,10 +32,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Force JSON responses for API routes
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
+        // Standardized 401 response for unauthenticated requests
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([

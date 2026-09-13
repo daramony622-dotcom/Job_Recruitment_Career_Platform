@@ -26,7 +26,10 @@ class CompanyController extends Controller
     {
         Gate::authorize('viewAny', Company::class);
 
-        $query = Company::with('user');
+        $query = Company::with('user')
+            ->withCount([
+                'jobs as open_jobs_count' => fn ($jobQuery) => $jobQuery->published(),
+            ]);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -36,7 +39,7 @@ class CompanyController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -71,8 +74,17 @@ class CompanyController extends Controller
     {
         Gate::authorize('view', $company);
 
+        $company->loadCount([
+            'jobs as open_jobs_count' => fn ($jobQuery) => $jobQuery->published(),
+        ]);
+
+        $company->load([
+            'user',
+            'jobs' => fn ($jobQuery) => $jobQuery->published()->with('category'),
+        ]);
+
         return response()->json([
-            'data' => $company->load('user')
+            'data' => $company,
         ]);
     }
 

@@ -1,7 +1,12 @@
 <script setup>
-import { ref } from 'vue'
-import { SlidersHorizontal, ChevronDown, RotateCcw, Check, X, MapPin, DollarSign, Clock } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
+import {
+  SlidersHorizontal, ChevronDown, RotateCcw, Check, X,
+  MapPin, DollarSign, Clock, FolderTree, Tag
+} from 'lucide-vue-next'
+import { useAuth } from '../../composables/useAuth'
 
+const category = defineModel('category', { type: String, default: '' })
 const location = defineModel('location', { type: String, default: '' })
 const salary = defineModel('salary', { type: String, default: '' })
 const time = defineModel('time', { type: String, default: '' })
@@ -10,6 +15,9 @@ defineProps({
   totalJobs: { type: Number, default: 0 },
   hasActiveFilters: { type: Boolean, default: false }
 })
+
+const { request } = useAuth()
+const categoriesList = ref([])
 
 const locations = [
   "Khan Boeung Keng Kang",
@@ -52,6 +60,20 @@ const openDropdown = ref(null)
 const toggleDropdown = (name) => {
   openDropdown.value = openDropdown.value === name ? null : name
 }
+
+async function fetchCategories() {
+  try {
+    const res = await request('/categories')
+    const list = res.data?.categories || res.data?.skill_categories || res.data || []
+    if (Array.isArray(list)) {
+      categoriesList.value = list
+    }
+  } catch {
+    // Non-blocking
+  }
+}
+
+onMounted(fetchCategories)
 </script>
 
 <template>
@@ -61,6 +83,62 @@ const toggleDropdown = (name) => {
       <div class="flex items-center gap-2 px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 text-sm font-semibold select-none">
         <SlidersHorizontal class="w-4 h-4 text-slate-600 dark:text-slate-300" />
         <span>Filters</span>
+      </div>
+
+      <!-- Category Filter Dropdown -->
+      <div class="relative">
+        <button 
+          @click="toggleDropdown('category')"
+          type="button"
+          class="flex items-center justify-between gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition cursor-pointer"
+          :class="category 
+            ? 'bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 border border-transparent'
+            : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200'"
+        >
+          <div class="flex items-center gap-2 truncate max-w-[140px] sm:max-w-[180px]">
+            <FolderTree class="w-4 h-4 text-blue-500 shrink-0" />
+            <span class="truncate">{{ category || 'Category & Skills' }}</span>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <span 
+              v-if="category" 
+              @click.stop="category = ''"
+              class="p-0.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-md text-slate-800 dark:text-slate-200 transition"
+              title="Clear category"
+            >
+              <X class="w-4 h-4" />
+            </span>
+            <ChevronDown v-else class="w-4 h-4 text-slate-400" />
+          </div>
+        </button>
+
+        <div v-if="openDropdown === 'category'" class="absolute left-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden">
+          <div class="max-h-64 overflow-y-auto p-1 divide-y divide-slate-100 dark:divide-slate-800/60">
+            <div class="p-1">
+              <button
+                @click="category = ''; openDropdown = null"
+                class="w-full text-left px-3 py-2 text-xs font-bold rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200"
+              >
+                All Categories
+              </button>
+            </div>
+            <div class="p-1 space-y-0.5">
+              <button
+                v-for="cat in categoriesList"
+                :key="cat.id || cat.slug || cat.name"
+                @click="category = cat.slug || cat.name; openDropdown = null"
+                class="w-full text-left px-3 py-2 text-xs font-medium rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between transition-colors"
+                :class="(category === cat.slug || category === cat.name) ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 font-bold' : 'text-slate-700 dark:text-slate-200'"
+              >
+                <div class="min-w-0 pr-2">
+                  <p class="truncate">{{ cat.name || cat.title }}</p>
+                  <p v-if="cat.roles || cat.jobs_count" class="text-[10px] text-slate-400">{{ cat.roles || `${cat.jobs_count} roles` }}</p>
+                </div>
+                <Check v-if="category === cat.slug || category === cat.name" class="w-4 h-4 text-blue-600 shrink-0" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Location Dropdown -->

@@ -27,7 +27,9 @@ class JobPostController extends Controller
             'sort_by', 'sort_order'
         ]);
 
-        $companyId = Auth::user()->company?->id;
+        $companyId = Auth::user()->role === 'hr'
+            ? null
+            : Auth::user()->company?->id;
 
         $jobPosts = $this->jobPostService->getJobPosts(
             filters: $filters,
@@ -35,11 +37,7 @@ class JobPostController extends Controller
             perPage: $request->input('per_page', 15)
         );
 
-        return response()->json([
-            'success'=>true,
-            'message'=> "Job get successful!",
-            "data"=> $jobPosts
-        ]);
+        return response()->json($jobPosts);
     }
 
     public function show(JobPost $jobPost): JsonResponse

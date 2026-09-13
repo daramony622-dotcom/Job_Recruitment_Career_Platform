@@ -66,6 +66,11 @@ class JobCategory extends Model
         return $this->hasMany(JobPost::class, 'category_id');
     }
 
+    public function jobPosts(): HasMany
+    {
+        return $this->hasMany(JobPost::class, 'category_id');
+    }
+
     public function activeChildren(): HasMany
     {
         return $this->children()->where('is_active', true);
