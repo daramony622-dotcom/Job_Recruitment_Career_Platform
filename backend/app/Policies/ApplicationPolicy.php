@@ -7,7 +7,7 @@ use App\Models\User;
 
 class ApplicationPolicy
 {
-    public function viewAny(User $user): bool
+    public function viewAny(): bool
     {
         return true;
     }
@@ -20,7 +20,7 @@ class ApplicationPolicy
 
         if ($user->isHr()) {
             $companyId = $user->company?->id;
-            return $companyId && $application->jobPost->company_id === $companyId;
+            return !$companyId || $application->jobPost->company_id === $companyId;
         }
 
         return $application->user_id === $user->id;

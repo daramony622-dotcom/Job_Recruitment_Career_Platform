@@ -18,10 +18,11 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('type');                    // Notification class name
             $table->morphs('notifiable');              // user_id + notifiable_type
-            $table->text('data');                      // JSON payload
+            $table->text('data');                      // JSON_payload
+
             $table->enum('channel', ['database', 'email', 'sms'])->default('database');
             $table->timestamp('read_at')->nullable();
-            $table->timestamp('created_at')->nullable();
+            $table->timestamps();
         });
     }
 

@@ -41,7 +41,7 @@ Route::delete('skills/custom/{name}', [SkillController::class, 'destroyCustomSki
 
 // CV management
 Route::apiResource('cv', CVController::class)->only([
-	'index', 'store', 'show', 'update', 'destroy',
+    'index', 'store', 'show', 'update', 'destroy',
 ]);
 
 // Search / filter jobs
@@ -51,7 +51,6 @@ Route::get('jobs/search', [JobSearchController::class, 'index']);
 Route::get('saved-jobs', [SavedJobController::class, 'index']);
 Route::post('saved-jobs', [SavedJobController::class, 'store']);
 Route::delete('saved-jobs/{savedJob}', [SavedJobController::class, 'destroy']);
-
 
 // Apply & application history/status
 Route::get('applications', [ApplicationController::class, 'index']);

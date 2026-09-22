@@ -3,246 +3,190 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\TelegramLoginToken;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
+use App\Services\Telegram;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class TelegramAuthController extends Controller
 {
-    /**
-     * Redirect or render Telegram OAuth login.
-     * GET /api/auth/telegram
-     */
-    public function redirect(Request $request)
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 1 — Frontend calls POST /api/auth/telegram/init
+    |--------------------------------------------------------------------------
+    | Generates a one-time token, stores it, and returns the t.me deep-link
+    | that the user will open in Telegram.
+    */
+    public function init(Request $request, Telegram $tg)
     {
-        $botName  = config('services.telegram.bot_name', 'MyAppBot');
-        $callback = route('auth.telegram.callback');
+        $token = Str::random(40);
 
-        if ($request->wantsJson() || $request->has('json')) {
+        TelegramLoginToken::create([
+            'token'      => $token,
+            'status'     => 'pending',
+            'user_id'    => Auth::id(), // null if registering, non-null if linking account
+            'ip'         => $request->ip(),
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        $deepLink = $tg->deepLink($token);
+
+        if (! $deepLink) {
             return response()->json([
-                'success'      => true,
-                'bot_name'     => $botName,
-                'callback_url' => $callback,
-            ]);
+                'message' => 'Telegram bot username is not configured. Please contact the administrator.',
+            ], 503);
         }
-
-        return response()->view('telegram.login');
-    }
-
-    public function login(Request $request): JsonResponse|\Illuminate\Http\RedirectResponse
-    {
-        // ── Step 1: Basic field validation ────────────────────────────────────
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'id'        => 'required',
-            'first_name'=> 'nullable|string',
-            'auth_date' => 'required|integer',
-            'hash'      => 'required|string',
-        ], [
-            'id.required'         => 'Telegram user ID (id) is required.',
-            'auth_date.required'  => 'Authentication timestamp (auth_date) is required.',
-            'hash.required'       => 'Telegram HMAC signature (hash) is required.',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->responseForBrowserOrApi($request, [
-                'success' => false,
-                'message' => 'Missing Telegram authentication parameters. When testing via Telegram Widget or API, id, first_name, auth_date, and hash must be provided.',
-                'errors'  => $validator->errors(),
-            ], 422);
-        }
-
-        $data = $request->only([
-            'id', 'first_name', 'last_name',
-            'username', 'photo_url', 'auth_date', 'hash',
-        ]);
-
-        $phone = $request->input('phone') ?? $request->input('phone_number');
-        if ($phone) {
-            $data['phone'] = $phone;
-        }
-
-        // ── Step 2: Verify Telegram hash signature ────────────────────────────
-        if (! $this->validateTelegramHash($data)) {
-            Log::warning('Telegram API auth: invalid hash', [
-                'ip'          => $request->ip(),
-                'telegram_id' => $data['id'] ?? null,
-            ]);
-
-            return $this->responseForBrowserOrApi($request, [
-                'message' => 'Invalid Telegram authentication data.',
-            ], 401);
-        }
-
-        // ── Step 3: Reject stale data (replay attack protection) ──────────────
-        if ((time() - (int) $data['auth_date']) > 86400) {
-            return $this->responseForBrowserOrApi($request, [
-                'message' => 'Telegram session has expired. Please try again.',
-            ], 401);
-        }
-
-        // ── Step 4: Find or create user ───────────────────────────────────────
-        [$user, $isNewUser] = $this->findOrCreateUser($data);
-
-        // ── Step 5: Issue Sanctum token ───────────────────────────────────────
-        // Delete old telegram tokens to avoid accumulation
-        $user->tokens()->where('name', 'telegram')->delete();
-
-        $token = $user->createToken('telegram')->plainTextToken;
-
-        Log::info('Telegram API auth: success', [
-            'user_id'      => $user->id,
-            'telegram_id'  => $user->telegram_id,
-            'is_new_user'  => $isNewUser,
-        ]);
-
-        // ── Step 6: Return response ───────────────────────────────────────────
-        return $this->responseForBrowserOrApi($request, [
-            'success'      => true,
-            'token'       => $token,
-            'token_type'  => 'Bearer',
-            'is_new_user' => $isNewUser,  // frontend can show "Welcome!" for new users
-            'user'        => [
-                'id'               => $user->id,
-                'name'             => $user->name,
-                'email'            => $user->email,
-                'phone'            => $user->phone,
-                'role'             => $user->role,
-                'avatar'           => $user->avatar_url,
-                'telegram_id'      => $user->telegram_id,
-                'telegram_username'=> $user->telegram_username,
-                'has_email'        => ! is_null($user->email),
-            ],
-        ], $isNewUser ? 201 : 200);
-    }
-
-    private function responseForBrowserOrApi(Request $request, array $payload, int $status): JsonResponse|\Illuminate\Http\RedirectResponse
-    {
-        if ($request->expectsJson() || $request->has('json')) {
-            return response()->json($payload, $status);
-        }
-
-        if (!($payload['success'] ?? false)) {
-            return redirect()->to(config('app.frontend_url') . '/login?oauth_error=' . urlencode($payload['message'] ?? 'Telegram authentication failed.'));
-        }
-
-        return redirect()->to(config('app.frontend_url') . '/login?token=' . urlencode($payload['token']));
-    }
-
-    /**
-     * POST /api/auth/telegram/email
-     *
-     * Called after Telegram login if the user wants to add their email.
-     * Requires: Authorization: Bearer {token}
-     *
-     * Body: { "email": "user@example.com" }
-     */
-    public function addEmail(Request $request): JsonResponse
-    {
-        $request->validate([
-            'email' => 'required|email|unique:users,email',
-        ]);
-
-        $user = $request->user();
-
-        $user->update(['email' => $request->email]);
 
         return response()->json([
-            'message' => 'Email saved successfully.',
-            'user'    => [
-                'id'        => $user->id,
-                'name'      => $user->name,
-                'email'     => $user->email,
-                'role'      => $user->role,
-                'avatar'    => $user->avatar_url,
-                'has_email' => true,
-            ],
+            'token'     => $token,
+            'deep_link' => $deepLink,
+            'url'       => $deepLink,   // alias — frontend uses data.url
+            'bot'       => config('services.telegram.username'),
         ]);
     }
 
-    // ─── Private helpers ──────────────────────────────────────────────────────
-
-    /**
-     * Find existing user or create a new one.
-     * Returns [$user, $isNewUser].
-     */
-    private function findOrCreateUser(array $data): array
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 2 — Frontend polls GET /api/auth/telegram/status/{token}
+    |--------------------------------------------------------------------------
+    | Returns current status. When approved, issues a Sanctum token so the
+    | frontend can log the user in without any extra step.
+    */
+    public function status(Request $request, string $token)
     {
-        $user = User::where('telegram_id', $data['id'])->first();
+        $row = TelegramLoginToken::where('token', $token)->first();
 
-        if ($user) {
-            // Refresh mutable Telegram fields
-            $user->update([
-                'telegram_username' => $data['username'] ?? $user->telegram_username,
-                'telegram_photo'    => $data['photo_url'] ?? $user->telegram_photo,
-                'phone'             => $data['phone'] ?? $user->phone,
+        if (! $row) {
+            return response()->json(['status' => 'not_found'], 404);
+        }
+
+        if ($row->isExpired() && $row->status === 'pending') {
+            $row->update(['status' => 'expired']);
+            return response()->json(['status' => 'expired']);
+        }
+
+        if ($row->status === 'declined') {
+            return response()->json(['status' => 'declined']);
+        }
+
+        if ($row->status === 'expired') {
+            return response()->json(['status' => 'expired']);
+        }
+
+        if ($row->isApproved()) {
+            $user = User::find($row->user_id);
+
+            if (! $user) {
+                return response()->json(['status' => 'error', 'message' => 'User not found.'], 404);
+            }
+
+            // Mark token consumed so it cannot be reused
+            $row->update(['status' => 'consumed']);
+
+            $accessToken = $user->createToken('telegram-auth')->plainTextToken;
+
+            return response()->json([
+                'status' => 'approved',
+                'token'  => $accessToken,
+                'user'   => [
+                    'id'                => $user->id,
+                    'name'              => $user->name,
+                    'email'             => $user->email,
+                    'role'              => $user->role,
+                    'telegram_id'       => $user->telegram_id,
+                    'telegram_username' => $user->telegram_username,
+                    'avatar'            => $user->telegram_photo ?? $user->avatar,
+                ],
             ]);
-
-            return [$user, false];
         }
 
-        // New user — auto-register
-        $user = User::create([
-            'name'              => $this->buildName($data),
-            'email'             => null,
-            'phone'             => $data['phone'] ?? null,
-            'password'          => null,
-            'role'              => 'user',
-            'telegram_id'       => (string) $data['id'],
-            'telegram_username' => $data['username'] ?? null,
-            'telegram_photo'    => $data['photo_url'] ?? null,
-            'email_verified_at' => now(), // Telegram already verified via phone
-        ]);
-
-        return [$user, true];
+        return response()->json(['status' => $row->status ?? 'pending']);
     }
 
-    /**
-     * Verify HMAC-SHA256 hash from Telegram.
-     * @see https://core.telegram.org/widgets/login#checking-authorization
-     */
-    private function validateTelegramHash(array $data): bool
+    /*
+    |--------------------------------------------------------------------------
+    | OPTIONAL — Telegram Login Widget callback (hash-verified)
+    |--------------------------------------------------------------------------
+    | Used if you place the official Telegram Login Widget on your website.
+    | Verifies the HMAC from Telegram's servers and issues a token directly.
+    */
+    public function callback(Request $request)
     {
+        $data = $request->all();
+
+        // Remove the hash from the data before verifying
         $receivedHash = $data['hash'] ?? null;
-
-        if (! $receivedHash) {
-            return false;
-        }
-
-        // Developer shortcut: Allow "test_hash" in local dev environment for easy Bruno testing
-        if ((config('app.env') === 'local' || config('app.debug')) && $receivedHash === 'test_hash') {
-            return true;
-        }
-
         unset($data['hash']);
 
-        // Remove null/empty — Telegram omits optional fields
-        $data = array_filter($data, fn($v) => $v !== null && $v !== '');
+        if (! $receivedHash) {
+            return response()->json(['message' => 'Missing hash.'], 422);
+        }
 
-        // Sort alphabetically, build "key=value\n..." string
+        // Build the check string as Telegram requires
         ksort($data);
         $checkString = implode("\n", array_map(
-            fn($k, $v) => "{$k}={$v}",
+            fn ($k, $v) => "{$k}={$v}",
             array_keys($data),
             array_values($data)
         ));
 
-        // Secret = raw binary SHA256 of bot token
-        $secret = hash('sha256', config('services.telegram.bot_token'), binary: true);
+        $botToken  = config('services.telegram.bot_token');
+        $secretKey = hash('sha256', $botToken, true);
+        $hash      = hash_hmac('sha256', $checkString, $secretKey);
 
-        $computedHash = hash_hmac('sha256', $checkString, $secret);
+        if (! hash_equals($hash, $receivedHash)) {
+            return response()->json(['message' => 'Invalid Telegram data.'], 403);
+        }
 
-        return hash_equals($computedHash, $receivedHash);
-    }
+        // Check auth_date freshness (max 24 hours)
+        if (time() - ($data['auth_date'] ?? 0) > 86400) {
+            return response()->json(['message' => 'Telegram auth data is outdated.'], 422);
+        }
 
-    /**
-     * Build display name from Telegram fields.
-     */
-    private function buildName(array $data): string
-    {
-        $full = trim(($data['first_name'] ?? '') . ' ' . ($data['last_name'] ?? ''));
+        $telegramId = $data['id'];
+        $firstName  = $data['first_name'] ?? '';
+        $lastName   = $data['last_name'] ?? '';
+        $username   = $data['username'] ?? null;
+        $photoUrl   = $data['photo_url'] ?? null;
 
-        return $full ?: ($data['username'] ?? 'Telegram User');
+        // Find or create the user
+        $user = User::firstOrCreate(
+            ['telegram_id' => $telegramId],
+            [
+                'name'              => trim("{$firstName} {$lastName}") ?: 'Telegram User',
+                'telegram_username' => $username,
+                'telegram_photo'    => $photoUrl,
+                'role'              => 'job_seeker',
+                'is_active'         => true,
+                'email_verified_at' => now(),
+            ]
+        );
+
+        // Update telegram fields if they changed
+        $user->update([
+            'telegram_username' => $username ?? $user->telegram_username,
+            'telegram_photo'    => $photoUrl ?? $user->telegram_photo,
+        ]);
+
+        $accessToken = $user->createToken('telegram-widget')->plainTextToken;
+
+        return response()->json([
+            'status' => 'approved',
+            'token'  => $accessToken,
+            'user'   => [
+                'id'                => $user->id,
+                'name'              => $user->name,
+                'email'             => $user->email,
+                'role'              => $user->role,
+                'telegram_id'       => $user->telegram_id,
+                'telegram_username' => $user->telegram_username,
+                'avatar'            => $user->telegram_photo ?? $user->avatar,
+            ],
+        ]);
     }
 }

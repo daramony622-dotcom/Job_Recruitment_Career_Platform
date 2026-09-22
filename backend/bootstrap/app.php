@@ -6,6 +6,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors as BaseCors;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -16,34 +17,68 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Prevent redirects on API routes when unauthenticated
+
+        /*
+        |------------------------------------------------------------------
+        | CORS — replace Laravel's built-in with our custom one
+        |------------------------------------------------------------------
+        */
+        $middleware->remove(BaseCors::class);
+        $middleware->prepend(\App\Http\Middleware\HandleCors::class);
+
+        /*
+        |------------------------------------------------------------------
+        | CSRF Exception — Exclude API routes from CSRF verification
+        |------------------------------------------------------------------
+        */
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'api/auth/*',
+            'auth/*',
+        ]);
+
+        /*
+        |------------------------------------------------------------------
+        | Guest redirects — API should return 401 JSON, not redirect
+        |------------------------------------------------------------------
+        */
         $middleware->redirectGuestsTo(function (Request $request) {
             return $request->is('api/*') ? null : route('login');
         });
 
-        // Ensure Sanctum handles API requests cleanly
+        /*
+        |------------------------------------------------------------------
+        | Sanctum stateful API (enables SPA cookie auth)
+        |------------------------------------------------------------------
+        */
         $middleware->statefulApi();
 
-        // Register custom middleware aliases
+        /*
+        |------------------------------------------------------------------
+        | Custom middleware aliases
+        |------------------------------------------------------------------
+        */
         $middleware->alias([
-            'role' => RoleMiddleware::class,
+            'role'         => RoleMiddleware::class,
             'verified.otp' => AuthMiddleware::class,
-            'has.company' => \App\Http\Middleware\EnsureHasCompany::class,
+            'has.company'  => \App\Http\Middleware\EnsureHasCompany::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Force JSON responses for API routes
+
+        // Force JSON for API routes
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
-        // Standardized 401 response for unauthenticated requests
+        // 401 JSON for unauthenticated
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => 'Unauthenticated.',
                 ], 401);
             }
         });
-    })->create();
+    })
+    ->create();

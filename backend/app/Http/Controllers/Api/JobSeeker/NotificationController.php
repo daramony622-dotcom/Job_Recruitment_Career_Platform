@@ -79,6 +79,7 @@ class NotificationController extends Controller
             'id' => $notification->id,
             'type' => $notification->type,
             'data' => $notification->data,
+            'channel' => $notification->channel ?? 'database',
             'read_at' => $notification->read_at?->toIso8601String(),
             'created_at' => $notification->created_at?->toIso8601String(),
         ];

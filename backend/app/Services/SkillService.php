@@ -28,6 +28,10 @@ class SkillService
             $query->ofCategory($filters['category']);
         }
 
+        if (!empty($filters['category_id'])) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
         if (isset($filters['is_active'])) {
             $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
         }
@@ -45,6 +49,7 @@ class SkillService
                 'name' => $data['name'],
                 'slug' => $data['slug'] ?? null, // Handled automatically by model boot if empty
                 'category' => $data['category'] ?? null,
+                'category_id' => $data['category_id'] ?? null,
                 'description' => $data['description'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
             ]);

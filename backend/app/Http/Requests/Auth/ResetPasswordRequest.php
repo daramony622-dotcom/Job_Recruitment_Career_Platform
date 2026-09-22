@@ -11,12 +11,26 @@ class ResetPasswordRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => strtolower(trim((string) $this->email)),
+            ]);
+        }
+        if ($this->has('code')) {
+            $this->merge([
+                'code' => trim((string) $this->code),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'email' => 'required|email|lowercase',
-            'code' => 'required|digits:6',
-            'password' => 'required|min:8|confirmed',
+            'email' => 'required|email',
+            'code' => 'required|string',
+            'password' => 'required|min:6',
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Application;
 use App\Models\User;
+use App\Notifications\ApplicationStatusUpdated;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -89,8 +90,13 @@ class ApplicationService
         }
 
         $application->save();
+        $updated = $application->fresh(['jobPost', 'jobSeeker.profile']);
 
-        return $application->fresh(['jobPost', 'jobSeeker.profile']);
+        if ($updated->jobSeeker) {
+            $updated->jobSeeker->notify(new ApplicationStatusUpdated($updated));
+        }
+
+        return $updated;
     }
 
     public function shortlist(Application $application, ?string $hrNotes = null): Application

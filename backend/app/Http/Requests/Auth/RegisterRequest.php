@@ -11,13 +11,23 @@ class RegisterRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => strtolower(trim((string) $this->email)),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|lowercase|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
-            'role' => 'nullable|in:hr,user',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'nullable|string|max:30',
+            'password' => 'required|string|min:6',
+            'role' => 'nullable|in:hr,user,company,candidate,job_seeker',
         ];
     }
 }

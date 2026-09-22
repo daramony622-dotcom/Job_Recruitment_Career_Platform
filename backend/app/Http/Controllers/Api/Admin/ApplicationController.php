@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use App\Http\Requests\Application\UpdateApplicationStatusRequest;
 use App\Services\ApplicationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,6 +38,24 @@ class ApplicationController extends Controller
         return response()->json([
             'status' => 'success',
             'data'   => $application->load(['jobPost.company', 'jobSeeker.profile', 'interviews'])
+        ]);
+    }
+
+    public function updateStatus(UpdateApplicationStatusRequest $request, Application $application): JsonResponse
+    {
+        $this->authorize('updateStatus', $application);
+
+        $updated = $this->applicationService->updateStatus(
+            $application,
+            $request->validated('status'),
+            $request->validated('hr_notes'),
+            $request->validated('rejection_reason')
+        );
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Application status updated successfully.',
+            'data'    => $updated,
         ]);
     }
 }

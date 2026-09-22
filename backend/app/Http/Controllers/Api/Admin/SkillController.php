@@ -36,7 +36,9 @@ class SkillController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:skills,name',
+            'slug' => 'nullable|string|max:255|unique:skills,slug',
             'category' => 'nullable|string|max:255',
+            'category_id' => 'nullable|integer|exists:skill_categories,id',
             'description' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
         ]);
@@ -70,7 +72,9 @@ class SkillController extends Controller
     {
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255|unique:skills,name,' . $skill->id,
+            'slug' => 'nullable|string|max:255|unique:skills,slug,' . $skill->id,
             'category' => 'nullable|string|max:255',
+            'category_id' => 'nullable|integer|exists:skill_categories,id',
             'description' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
         ]);

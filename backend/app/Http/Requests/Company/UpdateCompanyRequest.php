@@ -25,8 +25,8 @@ class UpdateCompanyRequest extends FormRequest
             'country'      => ['sometimes', 'nullable', 'string', 'max:255'],
             'city'         => ['sometimes', 'nullable', 'string', 'max:255'],
             'address'      => ['sometimes', 'nullable', 'string', 'max:500'],
-            'logo'         => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
-            'cover_image'  => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg', 'max:5120'],
+            'logo'         => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'cover_image'  => ['sometimes', 'nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ];
     }
 }

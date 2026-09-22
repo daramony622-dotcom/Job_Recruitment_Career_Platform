@@ -27,8 +27,8 @@ class StoreCompanyRequest extends FormRequest
             'country'      => ['nullable', 'string', 'max:255'],
             'city'         => ['nullable', 'string', 'max:255'],
             'address'      => ['nullable', 'string', 'max:500'],
-            'logo'         => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
-            'cover_image'  => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:5120'],
+            'logo'         => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'cover_image'  => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ];
     }
 }

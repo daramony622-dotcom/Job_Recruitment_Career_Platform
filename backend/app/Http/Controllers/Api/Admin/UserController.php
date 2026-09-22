@@ -18,7 +18,7 @@ class UserController extends Controller
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of users with filters & pagination.
      */
     public function index(Request $request): JsonResponse
     {
@@ -34,7 +34,7 @@ class UserController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created user.
      */
     public function store(Request $request): JsonResponse
     {
@@ -43,10 +43,11 @@ class UserController extends Controller
         }
 
         $validated = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8'],
-            'role'     => ['sometimes', 'string', 'in:admin,hr,user'],
+            'name'      => ['required', 'string', 'max:255'],
+            'email'     => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password'  => ['required', 'string', 'min:6'],
+            'role'      => ['sometimes', 'string', 'in:admin,hr,user,job_seeker'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $user = $this->userService->createUser($validated);
@@ -59,7 +60,7 @@ class UserController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified user details.
      */
     public function show(int $id): JsonResponse
     {
@@ -79,13 +80,12 @@ class UserController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified user role. Admin can only edit the user role.
      */
     public function update(Request $request, User $user): JsonResponse
     {
-        // Only admin can change roles
-        if ($request->has('role') && $request->user()?->role !== 'admin') {
-            abort(403, 'Only an authenticated administrator can change user roles.');
+        if ($request->user()?->role !== 'admin') {
+            abort(403, 'Only administrators can change user roles.');
         }
 
         if ($request->input('role') === 'job_seeker') {
@@ -93,41 +93,34 @@ class UserController extends Controller
         }
 
         $validated = $request->validate([
-            'name'      => ['sometimes', 'string', 'max:255'],
-            'email'     => ['sometimes', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'role'      => ['sometimes', 'string', 'in:admin,hr,user'],
-            'is_active' => ['sometimes', 'boolean'],
-            'password'  => ['sometimes', 'nullable', 'string', 'min:8'],
+            'role' => ['required', 'string', 'in:admin,hr,user,job_seeker'],
         ]);
 
-        // Remove null/empty password so it doesn't get hashed
-        if (empty($validated['password'])) {
-            unset($validated['password']);
-        }
-
-        $user = $this->userService->updateUser($user, $validated);
+        $updatedUser = $this->userService->updateUser($user, ['role' => $validated['role']]);
 
         return response()->json([
             'status'  => 'success',
-            'message' => 'User updated successfully.',
-            'data'    => $user
+            'message' => 'User role updated successfully.',
+            'data'    => $updatedUser
         ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified user from storage.
      */
     public function destroy(Request $request, User $user): JsonResponse
     {
         if ($request->user()?->is($user)) {
-            abort(422, 'You cannot delete the account currently being used.');
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'You cannot delete the account currently being used.'
+            ], 422);
         }
 
-        $user->delete();
+        $this->userService->deleteUser($user);
 
         return response()->json([
-            'status'
-               => 'success',
+            'status'  => 'success',
             'message' => 'User deleted successfully.'
         ]);
     }

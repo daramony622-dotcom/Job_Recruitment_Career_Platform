@@ -15,8 +15,10 @@ use App\Http\Controllers\Api\Admin\SettingController;
 use App\Http\Controllers\Api\Admin\SkillCategoryController;
 use App\Http\Controllers\Api\Admin\SkillController;
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Requests\Application\UpdateApplicationStatusRequest;
 use App\Http\Controllers\Api\ContactController;
 use Illuminate\Support\Facades\Route;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -28,7 +30,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('admin.')->group(function () {
     // Manage Users & Companies
-    Route::apiResource('users', UserController::class)->except(['store']);
+    Route::apiResource('users', UserController::class);
     Route::apiResource('companies', CompanyController::class);
     Route::match(['put', 'patch'], 'companies/{company}/status', [CompanyController::class, 'updateStatus'])->name('companies.updateStatus');
 
@@ -69,6 +71,8 @@ Route::name('admin.')->group(function () {
 
     // View Applications and manage platform-wide interviews
     Route::apiResource('applications', ApplicationController::class)->only(['index', 'show']);
+    Route::patch('applications/{application}/status', [ApplicationController::class, 'updateStatus'])
+        ->name('applications.updateStatus');
     Route::apiResource('interviews', InterviewController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::patch('interviews/{interview}/cancel', [InterviewController::class, 'cancel'])
         ->name('interviews.cancel');

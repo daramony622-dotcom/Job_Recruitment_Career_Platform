@@ -183,6 +183,15 @@ class AuthenticationTest extends TestCase
         $this->assertDatabaseHas('users', [
             'telegram_id'       => '987654321',
             'telegram_username' => 'john_tg',
+            'email'             => 'telegram_987654321@telegram.local',
         ]);
+    }
+
+    public function test_telegram_webhook_requires_configured_secret(): void
+    {
+        config()->set('services.telegram.webhook_secret', 'test-webhook-secret');
+
+        $this->postJson('/api/telegram/webhook', [])
+            ->assertForbidden();
     }
 }

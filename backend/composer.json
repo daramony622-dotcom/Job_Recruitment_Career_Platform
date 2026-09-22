@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.3",
         "cloudinary/cloudinary_php": "^3.1",
+        "irazasyed/telegram-bot-sdk": "^3.16",
         "laravel/framework": "^13.0",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.30",
@@ -47,6 +48,7 @@
             "Composer\\Config::disableProcessTimeout",
             "@php artisan dev"
         ],
+        "telegram": "@php artisan telegram:poll",
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"

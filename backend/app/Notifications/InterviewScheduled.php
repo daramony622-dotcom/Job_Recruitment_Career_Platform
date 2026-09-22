@@ -61,11 +61,15 @@ class InterviewScheduled extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
+            'title' => 'Interview Scheduled',
             'interview_id' => $this->interview->id,
             'job_title' => $this->interview->application?->jobPost?->title,
             'scheduled_at' => $this->interview->scheduled_at,
             'meeting_link' => $this->interview->meeting_link,
             'message' => 'Your interview has been scheduled.',
+            'action_url' => '/notifications',
+            'action_label' => 'View Interview',
+            'icon_type' => 'interview',
         ];
     }
 }

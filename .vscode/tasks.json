@@ -1,0 +1,53 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Validate frontend_user production build",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Validate frontend_user build via relative prefix",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"--prefix",
+				"frontend_user",
+				"run",
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check frontend_admin process locks",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$hits = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*frontend_admin*' -or $_.ExecutablePath -like '*frontend_admin*' }; if ($hits) { $hits | Select-Object ProcessId,Name,CommandLine | Format-List } else { Write-Output 'NO_FRONTEND_ADMIN_PROCESS_REFERENCES' }"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Check frontend_admin app processes",
+			"type": "shell",
+			"command": "powershell.exe",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$hits = Get-CimInstance Win32_Process | Where-Object { $_.Name -notin @('cmd.exe','powershell.exe') -and (($_.CommandLine -like '*frontend_admin*') -or ($_.ExecutablePath -like '*frontend_admin*')) }; if ($hits) { $hits | Select-Object ProcessId,Name,CommandLine | Format-List } else { Write-Output 'NO_NON_SHELL_FRONTEND_ADMIN_PROCESS_REFERENCES' }"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

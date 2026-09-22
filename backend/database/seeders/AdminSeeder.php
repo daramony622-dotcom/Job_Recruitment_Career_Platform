@@ -10,24 +10,26 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'admin@gmail.com'],
+        $admins = [
             [
-                'name' => 'Super Admin',
-                'password' => Hash::make('Admin@1234'),
-                'role' => 'admin',
-                'email_verified_at' => now(),
+                'email' => 'mengsiek8@gmail.com',
+                'name'  => 'Super Admin',
+                'password' => 'meng@123gris',
+                'role'  => 'admin',
             ]
-        );
+        ];
 
-        User::updateOrCreate(
-            ['email' => 'mengsiek8@gmail.com'],
-            [
-                'name' => 'Super Admin',
-                'password' => Hash::make('meng@123gris'),
-                'role' => 'admin',
-                'email_verified_at' => now(),
-            ]
-        );
+        foreach ($admins as $account) {
+            User::updateOrCreate(
+                ['email' => $account['email']],
+                [
+                    'name'              => $account['name'],
+                    'password'          => Hash::make($account['password']),
+                    'role'              => $account['role'],
+                    'is_active'         => true,
+                    'email_verified_at' => now(),
+                ]
+            );
+        }
     }
 }

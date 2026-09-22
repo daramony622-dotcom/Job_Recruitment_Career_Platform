@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Company;
+use App\Models\JobCategory;
 use App\Models\JobPost;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -31,6 +32,50 @@ class ReportController extends Controller
 
         $candidateQuery = User::query()->whereIn('role', ['user', 'job_seeker']);
 
+        // Monthly trends (past 6 months)
+        $monthlyTrends = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthDate = now()->subMonths($i);
+            $monthKey = $monthDate->format('Y-m');
+            $label = $monthDate->format('M');
+            
+            $appsCount = Application::query()
+                ->whereYear('created_at', $monthDate->year)
+                ->whereMonth('created_at', $monthDate->month)
+                ->count();
+
+            $jobsCount = JobPost::query()
+                ->whereYear('created_at', $monthDate->year)
+                ->whereMonth('created_at', $monthDate->month)
+                ->count();
+
+            $monthlyTrends[] = [
+                'month' => $label,
+                'key' => $monthKey,
+                'applications' => $appsCount,
+                'jobs' => $jobsCount,
+            ];
+        }
+
+        // Category progress
+        $categoryProgress = JobCategory::query()
+            ->withCount('jobPosts')
+            ->limit(5)
+            ->get()
+            ->map(function ($cat) {
+                return [
+                    'id' => $cat->id,
+                    'name' => $cat->name,
+                    'jobs_count' => $cat->job_posts_count,
+                    'progress' => min(100, max(15, $cat->job_posts_count * 15)),
+                ];
+            });
+
+        $hiredCount = (int) ($applicationStatusCounts['hired'] ?? 0);
+        $shortlistedCount = (int) ($applicationStatusCounts['shortlisted'] ?? 0);
+        $totalApps = Application::query()->count();
+        $conversionRate = $totalApps > 0 ? round((($hiredCount + $shortlistedCount) / $totalApps) * 100, 1) : 0;
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -45,10 +90,13 @@ class ReportController extends Controller
                         ->whereNotNull('email_verified_at')
                         ->count(),
                     'total_companies' => Company::query()->count(),
-                    'total_applications' => Application::query()->count(),
+                    'total_applications' => $totalApps,
+                    'conversion_rate' => $conversionRate,
                 ],
                 'job_posts_by_status' => $jobStatusCounts,
                 'applications_by_status' => $applicationStatusCounts,
+                'monthly_trends' => $monthlyTrends,
+                'category_progress' => $categoryProgress,
                 'recent_jobs' => JobPost::query()
                     ->with('company:id,name')
                     ->latest()

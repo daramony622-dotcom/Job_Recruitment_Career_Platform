@@ -21,6 +21,56 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Telegram Login
+
+Telegram login uses a one-time deep link. The user clicks Telegram Login, opens the bot, presses Start, confirms Yes, and the browser polls the token until the account is created or approved.
+
+For the official Telegram Login Widget, configure `TELEGRAM_BOT_USERNAME` with the bot username without `@`. Register the exact public HTTPS frontend hostname with BotFather using `/setdomain` (for example, `jobs.example.com`). Set that same URL in `FRONTEND_URL`, set the API URL in the frontend `VITE_API_URL`, and add the frontend origin to `CORS_ALLOWED_ORIGINS`. Telegram cannot use `localhost` as the production widget domain.
+
+For local development, run the Telegram update consumer in a second backend terminal:
+
+```bash
+php artisan telegram:poll
+```
+
+For production, configure Telegram to call `POST /api/telegram/webhook` and set `TELEGRAM_WEBHOOK_SECRET`. The webhook secret is enforced whenever it is configured. Do not run polling and a webhook for the same bot at the same time.
+
+After deploying with the production `APP_URL`, configure the webhook from the backend directory:
+
+```bash
+php artisan telegram:set-webhook
+```
+
+To inspect the current webhook, call Telegram's `getWebhookInfo` API. To switch back to local polling, remove the webhook first:
+
+```bash
+php artisan telegram:set-webhook --remove
+php artisan telegram:poll
+```
+
+### Windows SSL certificate setup
+
+If polling reports `cURL error 60`, configure PHP with a trusted CA bundle. Find the active PHP configuration with:
+
+```bash
+php --ini
+```
+
+In the loaded `php.ini`, set both values to the same CA bundle path:
+
+```ini
+curl.cainfo = "C:\\php\\extras\\ssl\\cacert.pem"
+openssl.cafile = "C:\\php\\extras\\ssl\\cacert.pem"
+```
+
+Alternatively, set the project-specific path in `.env`:
+
+```env
+TELEGRAM_CA_BUNDLE=C:\\php\\extras\\ssl\\cacert.pem
+```
+
+Restart the terminal after changing PHP configuration, then run `php artisan config:clear` and `php artisan telegram:poll`. Do not disable SSL verification.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.

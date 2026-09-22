@@ -22,10 +22,16 @@ class ApplicantController extends Controller
         $company = $request->user()->company;
 
         if (!$company) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'User is not associated with any company.'
-            ], 400);
+            if ($request->user()->isAdmin() || $request->user()->isHr()) {
+                $applications = $this->applicationService->listAll($request->query('status'));
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $applications,
+                ]);
+            }
+
+            return response()->json(['status' => 'error', 'message' => 'User is not associated with any company.'], 403);
         }
 
         $applications = $this->applicationService->listForCompany(
