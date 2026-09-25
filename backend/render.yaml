@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: job-recruitment-career-platform
+    runtime: php
+    plan: free
+    rootDir: backend
+    buildCommand: composer install --no-dev --optimize-autoloader && php artisan config:cache
+    startCommand: php artisan migrate --force && php artisan serve --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        value: base64:ehmvaiJxSmW7bAvyP7wyeQ+MLZ20g68B7Xl3C13J1cQ=
+      - key: APP_URL
+        value: https://job-recruitment-career-platform.onrender.com
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        value: dpg-darcl859fdbs7392s6m0-a
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        value: jobrecruitmentdb
+      - key: DB_USERNAME
+        value: jobrecruitmentdb_user
+      - key: DB_PASSWORD
+        sync: false
