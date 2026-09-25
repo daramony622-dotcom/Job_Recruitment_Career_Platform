@@ -1,12 +1,7 @@
 FROM richarvey/nginx-php-fpm:3.1.6
 
-# Install system dependencies for PostgreSQL and other tools
-RUN apt-get update && apt-get install -y \
-     libpq-dev \
-     libzip-dev \
-     unzip \
-     git \
-     && rm -rf /var/lib/apt/lists/*
+# Install system dependencies using apk (Alpine Linux package manager)
+RUN apk add --no-cache postgresql-dev libzip-dev zip unzip git
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_pgsql pgsql zip
