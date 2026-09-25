@@ -1,34 +1,27 @@
-FROM php:8.2-apache
+FROM richarvey/nginx-php-fpm:3.1.6
 
-# Install system dependencies and PHP extensions for PostgreSQL
-RUN apt-get update && apt-get install -y \
-     libpq-dev \
-     zip \
-     unzip \
-     git \
-     curl \
-     && docker-php-ext-install pdo pdo_pgsql zip
+# Install PostgreSQL PHP extension
+RUN apk add --no-cache postgresql-dev \
+     && docker-php-ext-install pdo_pgsql pgsql
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
-
-# Set working directory
-WORKDIR /var/www/html
-
-# Copy project files
 COPY . .
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Make the deploy script executable
+RUN chmod +x /var/www/html/scripts/00-laravel-deploy.sh
 
-# Install Laravel dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Image config
+ENV SKIP_COMPOSER 1
+ENV WEBROOT /var/www/html/public
+ENV PHP_ERRORS_STDERR 1
+ENV RUN_SCRIPTS 1
+ENV REAL_IP_HEADER 1
 
-# Set permissions for Laravel
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Laravel config
+ENV APP_ENV production
+ENV APP_DEBUG false
+ENV LOG_CHANNEL stderr
 
-# Expose port 80
-EXPOSE 80
+# Allow composer to run as root
+ENV COMPOSER_ALLOW_SUPERUSER 1
 
-# Run migrations and start Apache
-CMD php artisan migrate --force && php artisan config:cache && php artisan route:cache && apache2-foreground
+CMD ["/start.sh"]
