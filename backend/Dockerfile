@@ -5,6 +5,10 @@ COPY . .
 # Install Composer dependencies during the build
 RUN composer install --no-dev --optimize-autoloader
 
+# Set correct permissions for Laravel
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
 # Make the deploy script executable
 RUN chmod +x /var/www/html/scripts/00-laravel-deploy.sh
 
