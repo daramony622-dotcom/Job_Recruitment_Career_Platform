@@ -1,7 +1,15 @@
 FROM richarvey/nginx-php-fpm:3.1.6
 
-# Install PostgreSQL PHP extensions
-RUN docker-php-ext-install pdo_pgsql pgsql
+# Install system dependencies for PostgreSQL and other tools
+RUN apt-get update && apt-get install -y \
+     libpq-dev \
+     libzip-dev \
+     unzip \
+     git \
+     && rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo_pgsql pgsql zip
 
 # Set the working directory
 WORKDIR /var/www/html
