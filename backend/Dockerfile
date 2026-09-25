@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Install system dependencies
+# Install system dependencies and PHP extensions for PostgreSQL
 RUN apt-get update && apt-get install -y \
      libpq-dev \
      libzip-dev \
@@ -8,8 +8,7 @@ RUN apt-get update && apt-get install -y \
      unzip \
      git \
      curl \
-     && docker-php-ext-install pdo pdo_pgsql zip \
-     && apt-get clean && rm -rf /var/lib/apt/lists/*
+     && docker-php-ext-install pdo pdo_pgsql zip
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
@@ -20,7 +19,7 @@ WORKDIR /var/www/html
 # Copy project files
 COPY . .
 
-# Allow Composer to run as root (THE MISSING PIECE)
+# Allow Composer to run as root
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Install Composer
@@ -35,5 +34,5 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 # Expose port 80
 EXPOSE 80
 
-# Run migrations, cache config/routes, and start Apache
+# Run migrations and start Apache
 CMD php artisan migrate --force && php artisan config:cache && php artisan route:cache && apache2-foreground
