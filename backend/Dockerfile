@@ -2,7 +2,7 @@ FROM richarvey/nginx-php-fpm:3.1.6
 
 COPY . .
 
-# Install Composer dependencies
+# Install Composer dependencies during the build
 RUN composer install --no-dev --optimize-autoloader
 
 # Make the deploy script executable
