@@ -14,7 +14,7 @@ class EducationPolicy
 
     public function view(User $user, Education $education): bool
     {
-        return $user->isAdmin() || $user->id === $education->user_id || $user->id === $education->profile?->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $education->user_id || $user->id === $education->profile?->user_id;
     }
 
     public function create(User $user): bool
@@ -24,21 +24,21 @@ class EducationPolicy
 
     public function update(User $user, Education $education): bool
     {
-        return $user->isAdmin() || $user->id === $education->user_id || $user->id === $education->profile?->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $education->user_id || $user->id === $education->profile?->user_id;
     }
 
     public function delete(User $user, Education $education): bool
     {
-        return $user->isAdmin() || $user->id === $education->user_id || $user->id === $education->profile?->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $education->user_id || $user->id === $education->profile?->user_id;
     }
 
     public function restore(User $user, Education $education): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isHr();
     }
 
     public function forceDelete(User $user, Education $education): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isHr();
     }
 }

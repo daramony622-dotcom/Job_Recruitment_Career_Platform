@@ -12,10 +12,14 @@ import {
   Globe,
   BadgeCheck,
   CircleDot,
+  Download,
+  FileText,
+  GraduationCap,
 } from 'lucide-vue-next'
 import { adminApi } from '../api'
 import StatusBadge from './StatusBadge.vue'
 import { profileImage } from '../utils/media'
+import { resolveAssetUrl } from '../composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,6 +28,13 @@ const loading = ref(true)
 const error = ref('')
 const candidate = ref(null)
 const candidateAvatar = computed(() => profileImage(candidate.value))
+const cvUrl = (cv) => resolveAssetUrl(cv?.file_path)
+const formatDate = (value) => {
+  if (!value) return 'Not provided'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Not provided' : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+const formatDateRange = (item) => `${formatDate(item.start_date)} - ${item.is_current ? 'Present' : formatDate(item.end_date)}`
 
 async function fetchCandidate() {
   loading.value = true
@@ -112,6 +123,58 @@ onMounted(fetchCandidate)
           {{ candidate.profile?.bio || 'No profile description available.' }}
         </p>
       </div>
+
+      <!-- Personal profile details -->
+      <div class="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 mb-4">Profile details</h3>
+        <div class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          <div><span class="text-xs text-slate-500">Nationality</span><p class="font-semibold text-slate-800 dark:text-slate-200">{{ candidate.profile?.nationality || 'Not provided' }}</p></div>
+          <div><span class="text-xs text-slate-500">Availability</span><p class="font-semibold text-slate-800 dark:text-slate-200">{{ candidate.profile?.availability || 'Not provided' }}</p></div>
+          <div><span class="text-xs text-slate-500">Expected salary</span><p class="font-semibold text-slate-800 dark:text-slate-200">{{ candidate.profile?.expected_salary_min || candidate.profile?.expected_salary_max ? `${candidate.profile?.salary_currency || 'USD'} ${candidate.profile?.expected_salary_min || 0} - ${candidate.profile?.expected_salary_max || 0}` : 'Not provided' }}</p></div>
+          <div v-if="candidate.profile?.linkedin_url"><span class="text-xs text-slate-500">LinkedIn</span><a :href="candidate.profile.linkedin_url" target="_blank" rel="noopener" class="block font-semibold text-blue-600 hover:underline">Open profile</a></div>
+          <div v-if="candidate.profile?.github_url"><span class="text-xs text-slate-500">GitHub</span><a :href="candidate.profile.github_url" target="_blank" rel="noopener" class="block font-semibold text-blue-600 hover:underline">Open profile</a></div>
+          <div v-if="candidate.profile?.portfolio_url"><span class="text-xs text-slate-500">Portfolio</span><a :href="candidate.profile.portfolio_url" target="_blank" rel="noopener" class="block font-semibold text-blue-600 hover:underline">Open portfolio</a></div>
+        </div>
+      </div>
+
+      <!-- Education and experience -->
+      <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2 mb-4"><GraduationCap class="h-5 w-5 text-amber-500" /> Education</h3>
+          <div v-if="candidate.educations?.length" class="space-y-4">
+            <article v-for="item in candidate.educations" :key="item.id" class="border-l-2 border-amber-200 pl-4 dark:border-amber-900/60">
+              <p class="font-semibold text-slate-900 dark:text-slate-100">{{ item.degree || 'Education' }}</p>
+              <p class="text-sm text-slate-600 dark:text-slate-400">{{ item.institution_name }}<span v-if="item.field_of_study"> · {{ item.field_of_study }}</span></p>
+              <p class="mt-1 text-xs text-slate-500">{{ formatDateRange(item) }}</p>
+            </article>
+          </div>
+          <p v-else class="text-sm text-slate-500">No education records.</p>
+        </section>
+        <section class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2 mb-4"><Briefcase class="h-5 w-5 text-blue-500" /> Experience</h3>
+          <div v-if="candidate.experiences?.length" class="space-y-4">
+            <article v-for="item in candidate.experiences" :key="item.id" class="border-l-2 border-blue-200 pl-4 dark:border-blue-900/60">
+              <p class="font-semibold text-slate-900 dark:text-slate-100">{{ item.job_title || 'Experience' }}</p>
+              <p class="text-sm text-slate-600 dark:text-slate-400">{{ item.company_name }}<span v-if="item.location"> · {{ item.location }}</span></p>
+              <p class="mt-1 text-xs text-slate-500">{{ formatDateRange(item) }}</p>
+              <p v-if="item.description" class="mt-2 text-sm text-slate-600 dark:text-slate-400">{{ item.description }}</p>
+            </article>
+          </div>
+          <p v-else class="text-sm text-slate-500">No experience records.</p>
+        </section>
+      </div>
+
+      <!-- CV documents -->
+      <section class="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2 mb-4"><FileText class="h-5 w-5 text-red-500" /> CV documents</h3>
+        <div v-if="candidate.cvs?.length" class="grid gap-3 sm:grid-cols-2">
+          <article v-for="cv in candidate.cvs" :key="cv.id" class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
+            <div class="min-w-0"><p class="truncate font-semibold text-slate-900 dark:text-slate-100">{{ cv.title || 'CV document' }}</p><p class="text-xs text-slate-500">{{ cv.is_primary ? 'Primary CV · ' : '' }}{{ formatDate(cv.created_at) }}</p></div>
+            <a v-if="cv.file_path" :href="cvUrl(cv)" target="_blank" rel="noopener noreferrer" class="shrink-0 rounded-lg p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-900" title="Download CV"><Download class="h-4 w-4" /></a>
+          </article>
+        </div>
+        <p v-else class="text-sm text-slate-500">No CV documents uploaded.</p>
+      </section>
 
       <!-- Skills -->
       <div class="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8">

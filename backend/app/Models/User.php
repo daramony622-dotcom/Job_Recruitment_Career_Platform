@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -15,7 +16,23 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    private const CANDIDATE_ROLES = ['user', 'job_seeker', 'candidate'];
+    /*
+    |--------------------------------------------------------------------------
+    | Candidate Roles
+    |--------------------------------------------------------------------------
+    */
+
+    private const CANDIDATE_ROLES = [
+        'user',
+        'job_seeker',
+        'candidate',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mass Assignable Fields
+    |--------------------------------------------------------------------------
+    */
 
     protected $fillable = [
         'name',
@@ -24,7 +41,8 @@ class User extends Authenticatable
         'phone',
         'phone_number',
         'password',
-        'role', // admin | hr | user | job_seeker
+        'role',
+        'company_id',
         'is_active',
         'email_verified_at',
         'google_id',
@@ -34,80 +52,160 @@ class User extends Authenticatable
         'telegram_photo',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Hidden Fields
+    |--------------------------------------------------------------------------
+    */
+
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Appended Attributes
+    |--------------------------------------------------------------------------
+    */
+
     protected $appends = [
         'avatar_url',
     ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Casts
+    |--------------------------------------------------------------------------
+    */
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',   // hashes once on save. Never call Hash::make() as well.
-            'is_active'         => 'boolean',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
-    /* -------------------------------------------------------------------
-     | Attributes
-     |------------------------------------------------------------------ */
+    /*
+    |--------------------------------------------------------------------------
+    | Email Attribute
+    |--------------------------------------------------------------------------
+    |
+    | Always save email in lowercase and without surrounding spaces.
+    |
+    */
 
-    // Always store emails trimmed and lowercase so login lookups match
     protected function email(): Attribute
     {
         return Attribute::make(
-            set: fn (?string $value) => $value ? strtolower(trim($value)) : $value,
+            set: fn (?string $value) =>
+                $value !== null
+                    ? strtolower(trim($value))
+                    : null,
         );
     }
 
-    // Uses the profile avatar only if it is already loaded, to avoid an extra query per user
+    /*
+    |--------------------------------------------------------------------------
+    | Avatar URL
+    |--------------------------------------------------------------------------
+    */
+
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->telegram_photo
-            ?? $this->avatar
-            ?? ($this->relationLoaded('profile') ? $this->profile?->avatar : null);
+        /*
+         * Prefer Telegram photo.
+         */
+        if (!empty($this->telegram_photo)) {
+            return $this->telegram_photo;
+        }
+
+        /*
+         * Then normal avatar.
+         */
+        if (!empty($this->avatar)) {
+            return $this->avatar;
+        }
+
+        /*
+         * Only access profile if it was already eager-loaded.
+         * This prevents an extra query for every user.
+         */
+        if ($this->relationLoaded('profile')) {
+            return $this->profile?->avatar;
+        }
+
+        return null;
     }
 
-    /* -------------------------------------------------------------------
-     | Role helpers
-     |------------------------------------------------------------------ */
+    /*
+    |--------------------------------------------------------------------------
+    | Role Helpers
+    |--------------------------------------------------------------------------
+    */
 
-    public function hasRole(string|array $roles): bool
-    {
+    public function hasRole(
+        string|array $roles
+    ): bool {
+        /*
+         * Multiple roles.
+         */
         if (is_array($roles)) {
-            foreach ($roles as $r) {
-                if ($this->hasRole($r)) {
+            foreach ($roles as $role) {
+                if ($this->hasRole($role)) {
                     return true;
                 }
             }
+
             return false;
         }
 
-        // 'user', 'job_seeker' and 'candidate' are interchangeable
-        if (in_array($roles, self::CANDIDATE_ROLES, true) && $this->isJobSeeker()) {
-            return true;
+        $role = strtolower(trim($roles));
+
+        /*
+         * user / job_seeker / candidate
+         * are treated as candidate roles.
+         */
+        if (
+            in_array(
+                $role,
+                self::CANDIDATE_ROLES,
+                true
+            )
+        ) {
+            return $this->isJobSeeker();
         }
 
-        return $this->role === $roles;
+        return strtolower(
+            trim((string) $this->role)
+        ) === $role;
     }
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return strtolower(
+            trim((string) $this->role)
+        ) === 'admin';
     }
 
     public function isHr(): bool
     {
-        return $this->role === 'hr';
+        return strtolower(
+            trim((string) $this->role)
+        ) === 'hr';
     }
 
     public function isJobSeeker(): bool
     {
-        return in_array($this->role, self::CANDIDATE_ROLES, true);
+        return in_array(
+            strtolower(
+                trim((string) $this->role)
+            ),
+            self::CANDIDATE_ROLES,
+            true
+        );
     }
 
     public function isUser(): bool
@@ -120,53 +218,100 @@ class User extends Authenticatable
         return $this->isJobSeeker();
     }
 
-    /* -------------------------------------------------------------------
-     | Auth-provider helpers
-     |------------------------------------------------------------------ */
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Provider Helpers
+    |--------------------------------------------------------------------------
+    */
 
     public function isTelegramUser(): bool
     {
-        return ! is_null($this->telegram_id) && is_null($this->password);
+        return !empty($this->telegram_id);
     }
 
     public function isGoogleUser(): bool
     {
-        return ! is_null($this->google_id) && is_null($this->password);
+        return !empty($this->google_id);
     }
 
-    /* -------------------------------------------------------------------
-     | Relationships
-     |------------------------------------------------------------------ */
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
     public function otps(): HasMany
     {
-        return $this->hasMany(PasswordOTp::class);
+        return $this->hasMany(
+            PasswordOTP::class
+        );
     }
 
     public function profile(): HasOne
     {
-        return $this->hasOne(Profile::class);
+        return $this->hasOne(
+            Profile::class
+        );
     }
 
     public function cvs(): HasMany
     {
-        return $this->hasMany(CV::class);
+        return $this->hasMany(
+            CV::class
+        );
     }
 
-    public function company(): HasOne
+    public function educations(): HasMany
     {
-        return $this->hasOne(Company::class);
+        return $this->hasMany(
+            Education::class
+        );
+    }
+
+    public function experiences(): HasMany
+    {
+        return $this->hasMany(
+            Experience::class
+        );
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(
+            Company::class
+        );
+    }
+
+    public function ownedCompany(): HasOne
+    {
+        return $this->hasOne(Company::class, 'user_id');
+    }
+
+    public function assignedCompanies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class)->withTimestamps();
     }
 
     public function applications(): HasMany
     {
-        return $this->hasMany(Application::class, 'job_seeker_id');
+        return $this->hasMany(
+            Application::class,
+            'user_id'
+        );
     }
 
     public function skills(): BelongsToMany
     {
-        return $this->belongsToMany(Skill::class, 'user_skill', 'user_id', 'skill_id')
-            ->withPivot('level', 'years_of_experience')
-            ->withTimestamps();
+        return $this->belongsToMany(
+            Skill::class,
+            'user_skill',
+            'user_id',
+            'skill_id'
+        )
+        ->withPivot(
+            'level',
+            'years_of_experience'
+        )
+        ->withTimestamps();
     }
 }

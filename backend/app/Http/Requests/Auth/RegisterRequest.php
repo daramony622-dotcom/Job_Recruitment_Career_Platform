@@ -24,10 +24,12 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'required|email|max:255',
             'phone' => 'nullable|string|max:30',
             'password' => 'required|string|min:6',
             'role' => 'nullable|in:hr,user,company,candidate,job_seeker',
         ];
     }
+
+    
 }

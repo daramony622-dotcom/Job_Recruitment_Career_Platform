@@ -26,7 +26,7 @@ class CompanyController extends Controller
     {
         Gate::authorize('viewAny', Company::class);
 
-        $query = Company::with('user')
+        $query = Company::with(['user', 'assignedManagers'])
             ->withCount([
                 'jobs as open_jobs_count' => fn ($jobQuery) => $jobQuery->published(),
             ]);
@@ -58,8 +58,12 @@ class CompanyController extends Controller
         Gate::authorize('create', Company::class);
 
         $validated = $request->validated();
-        $user = User::findOrFail($validated['user_id']);
+        $managerIds = $validated['manager_ids'] ?? [];
+        unset($validated['manager_ids']);
+        $userId = $validated['user_id'] ?? $request->user()->id;
+        $user = User::findOrFail($userId);
         $company = $this->companyService->store($validated, $user);
+        $this->companyService->syncManagers($company, array_unique(array_merge($managerIds, [$userId])));
 
         return response()->json([
             'message' => 'Company created successfully by admin.',
@@ -80,6 +84,7 @@ class CompanyController extends Controller
 
         $company->load([
             'user',
+            'assignedManagers',
             'jobs' => fn ($jobQuery) => $jobQuery->published()->with('category'),
         ]);
 
@@ -95,7 +100,14 @@ class CompanyController extends Controller
     {
         Gate::authorize('update', $company);
 
-        $updatedCompany = $this->companyService->update($request->validated(), $company);
+        $validated = $request->validated();
+        $managerIds = $validated['manager_ids'] ?? null;
+        unset($validated['manager_ids']);
+        $updatedCompany = $this->companyService->update($validated, $company);
+
+        if ($managerIds !== null) {
+            $this->companyService->syncManagers($company, array_unique(array_merge($managerIds, [$company->user_id])));
+        }
 
         return response()->json([
             'message' => 'Company updated successfully by admin.',

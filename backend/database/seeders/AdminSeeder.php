@@ -10,16 +10,41 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
-        $admins = [
+        $users = [
+            // ── Admin account ─────────────────────────────────────────────
             [
-                'email' => 'mengsiek8@gmail.com',
-                'name'  => 'Super Admin',
+                'email'    => 'mengsiek8@gmail.com',
+                'name'     => 'Super Admin',
                 'password' => 'meng@123gris',
-                'role'  => 'admin',
-            ]
+                'role'     => 'admin',
+            ],
+            [
+                'email'    => 'mongsiek8@gmail.com',
+                'name'     => 'Admin User',
+                'password' => 'meng@123gris',
+                'role'     => 'admin',
+            ],
+            [
+                'email'    => 'daramony622@gmail.com',
+                'name'     => 'Dara Mony',
+                'password' => 'meng@123gris',
+                'role'     => 'hr',
+            ],
+            [
+                'email'    => 'monydara17@gmail.com',
+                'name'     => 'Mony Dara',
+                'password' => 'meng@123gris',
+                'role'     => 'hr',
+            ],
+            [
+                'email'    => 'satosiek697@gmail.com',
+                'name'     => 'Sato Siek',
+                'password' => 'meng@123gris',
+                'role'     => 'user',
+            ],
         ];
 
-        foreach ($admins as $account) {
+        foreach ($users as $account) {
             User::updateOrCreate(
                 ['email' => $account['email']],
                 [
@@ -30,6 +55,7 @@ class AdminSeeder extends Seeder
                     'email_verified_at' => now(),
                 ]
             );
+            $this->command->info("✅ Seeded: {$account['email']}");
         }
     }
 }

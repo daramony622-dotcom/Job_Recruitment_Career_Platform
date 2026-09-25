@@ -8,6 +8,7 @@ use App\Http\Resources\ProfileResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\File;
 
 class ProfileController extends Controller
 {
@@ -17,7 +18,7 @@ class ProfileController extends Controller
             'user_id' => $request->user()->id,
         ]);
 
-        $profile->load(['user', 'educations', 'experiences']);
+        $profile->load(['user', 'educations', 'experiences', 'cvs']);
 
         return new ProfileResource($profile);
     }
@@ -34,7 +35,7 @@ class ProfileController extends Controller
             collect($validated)->except(['name', 'email'])->all(),
         );
 
-        $profile->load(['user', 'educations', 'experiences']);
+        $profile->load(['user', 'educations', 'experiences', 'cvs']);
 
         return response()->json([
             'message' => 'Profile updated successfully.',
@@ -45,7 +46,7 @@ class ProfileController extends Controller
     public function updateAvatar(Request $request): JsonResponse
     {
         $request->validate([
-            'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'avatar' => ['required', File::image()->types(['jpg', 'jpeg', 'png', 'webp', 'avif'])->max(5 * 1024)],
         ]);
 
         $profile = $request->user()->profile()->firstOrCreate([
@@ -60,7 +61,7 @@ class ProfileController extends Controller
             'avatar' => $request->file('avatar')->store('avatars', 'public'),
         ]);
 
-        $profile->load(['user', 'educations', 'experiences']);
+        $profile->load(['user', 'educations', 'experiences', 'cvs']);
 
         return response()->json([
             'message' => 'Profile photo updated successfully.',

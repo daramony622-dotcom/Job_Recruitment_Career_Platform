@@ -27,7 +27,7 @@ class JobPostController extends Controller
             'sort_by', 'sort_order'
         ]);
 
-        $companyId = Auth::user()->role === 'hr'
+        $companyId = Auth::user()->role === 'admin'
             ? null
             : Auth::user()->company?->id;
 

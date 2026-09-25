@@ -11,6 +11,7 @@ import {
   Globe2,
   Mail,
   Phone,
+  Plus,
   RefreshCw,
   Save,
   Settings,
@@ -34,7 +35,13 @@ const unreadNotifications = ref(0)
 const notificationLoading = ref(false)
 const companyExists = ref(false)
 const isCompanyScopedUser = computed(() => ['hr', 'company'].includes(JSON.parse(localStorage.getItem('admin_user') || 'null')?.role))
+const isHrUser = computed(() => JSON.parse(localStorage.getItem('admin_user') || 'null')?.role === 'hr')
 const currentUser = computed(() => JSON.parse(localStorage.getItem('admin_user') || localStorage.getItem('user') || 'null'))
+const selectedCompanyId = ref('')
+const managedCompanies = ref([])
+const switchTargetId = ref('')
+const switchingCompany = ref(false)
+
 const settings = reactive({
   site_name: '',
   site_email: '',
@@ -42,7 +49,7 @@ const settings = reactive({
   site_logo: '',
 })
 const company = reactive({
-  name: '', website: '', email: '', phone: '', description: '', industry: '', company_size: '',
+  id: '', name: '', website: '', email: '', phone: '', description: '', industry: '', company_size: '',
   founded_year: '', country: '', city: '', address: '',
 })
 
@@ -72,15 +79,27 @@ async function fetchData() {
   error.value = ''
   try {
     if (isCompanyScopedUser.value) {
-      const [profileResult, notificationResult] = await Promise.allSettled([
+      const [profileResult, companiesResult, notificationResult] = await Promise.allSettled([
         adminApi.getCompanyProfile(),
+        adminApi.getManagedCompanies(),
         adminApi.getNotifications(),
       ])
-      const values = profileResult.status === 'fulfilled'
-        ? (profileResult.value.data?.data || profileResult.value.data || {})
-        : {}
+
+      let values = {}
+      if (profileResult.status === 'fulfilled') {
+        values = profileResult.value.data?.data || profileResult.value.data || {}
+      }
+
       companyExists.value = Boolean(values.id)
+      selectedCompanyId.value = values.id || ''
+      switchTargetId.value = values.id || ''
       Object.assign(company, values)
+
+      if (companiesResult.status === 'fulfilled') {
+        const payload = companiesResult.value.data?.data || companiesResult.value.data || []
+        managedCompanies.value = Array.isArray(payload) ? payload : []
+      }
+
       if (notificationResult.status === 'fulfilled') setNotifications(notificationResult.value.data)
       return
     }
@@ -100,6 +119,30 @@ async function fetchData() {
     error.value = requestError.response?.data?.message || 'Failed to load settings and account data.'
   } finally {
     loading.value = false
+  }
+}
+
+async function switchCompany() {
+  if (!switchTargetId.value || switchTargetId.value === String(selectedCompanyId.value)) return
+
+  switchingCompany.value = true
+  error.value = ''
+  notice.value = ''
+  try {
+    await adminApi.switchCompany(switchTargetId.value)
+    localStorage.setItem('active_company_id', String(switchTargetId.value))
+    const savedUser = JSON.parse(localStorage.getItem('admin_user') || localStorage.getItem('user') || 'null')
+    if (savedUser) {
+      savedUser.company_id = Number(switchTargetId.value)
+      localStorage.setItem('admin_user', JSON.stringify(savedUser))
+      localStorage.setItem('user', JSON.stringify(savedUser))
+    }
+    notice.value = 'Company switched successfully.'
+    await fetchData()
+  } catch (requestError) {
+    error.value = requestError.response?.data?.message || 'Unable to switch company.'
+  } finally {
+    switchingCompany.value = false
   }
 }
 
@@ -125,14 +168,20 @@ async function deleteNotification(id) {
 }
 
 async function deleteCompanyProfile() {
-  if (!companyExists.value || !window.confirm('Delete your company profile? This will remove access to its job posts.')) return
+  if (isHrUser.value) return
+  if (!companyExists.value || !window.confirm('Delete this company profile? This will remove access to its job posts.')) return
   saving.value = true
   error.value = ''
   try {
-    await adminApi.deleteCompanyProfile()
+    if (selectedCompanyId.value && selectedCompanyId.value !== 'new') {
+      await adminApi.deleteCompany(selectedCompanyId.value)
+    } else {
+      await adminApi.deleteCompanyProfile()
+    }
     companyExists.value = false
     Object.keys(company).forEach((key) => { company[key] = '' })
     notice.value = 'Company profile deleted successfully.'
+    fetchData()
   } catch (requestError) {
     error.value = requestError.response?.data?.message || 'Failed to delete company profile.'
   } finally {
@@ -146,11 +195,36 @@ async function saveSettings() {
   notice.value = ''
   try {
     if (isCompanyScopedUser.value) {
-      const payload = { ...company }
-      if (companyExists.value) await adminApi.updateCompanyProfile(payload)
-      else await adminApi.storeCompanyProfile(payload)
+      if (isHrUser.value && !companyExists.value) {
+        throw new Error('No company has been assigned to this HR account. Ask an administrator to assign one.')
+      }
+      const payload = {
+        name: company.name,
+        website: company.website,
+        email: company.email,
+        phone: company.phone,
+        description: company.description,
+        industry: company.industry,
+        company_size: company.company_size,
+        founded_year: company.founded_year,
+        country: company.country,
+        city: company.city,
+        address: company.address,
+      }
+      let res = null
+      if (isHrUser.value) {
+        res = await adminApi.updateCompanyProfile(payload)
+      } else if (companyExists.value && selectedCompanyId.value) {
+        res = await adminApi.updateCompany(selectedCompanyId.value, payload)
+      } else {
+        res = await adminApi.storeCompany(payload)
+      }
+      const updated = res?.data?.data || res?.data || payload
       companyExists.value = true
-      notice.value = 'Company profile updated successfully.'
+      selectedCompanyId.value = updated.id || selectedCompanyId.value
+      Object.assign(company, updated)
+      notice.value = 'Company profile saved successfully.'
+      fetchData()
       return
     }
 
@@ -200,6 +274,16 @@ onMounted(fetchData)
       <div v-if="loading" class="settings-loading"><RefreshCw class="w-5 h-5 animate-spin" /> Loading configuration...</div>
 
       <template v-else>
+        <section v-if="isHrUser && managedCompanies.length" class="settings-card mb-5">
+          <div class="settings-card-heading">
+            <div><p class="settings-kicker">Company access</p><h2>Switch Company</h2><p>Choose one of the companies assigned to your HR account. Ask an administrator to assign more companies when needed.</p></div>
+            <Building2 class="settings-heading-icon" />
+          </div>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <label class="settings-field flex-1"><span>Active company</span><div class="settings-input-wrap"><Building2 class="w-4 h-4" /><select v-model="switchTargetId"><option v-for="item in managedCompanies" :key="item.id" :value="String(item.id)">{{ item.name }}</option></select></div></label>
+            <button class="settings-primary-button" :disabled="switchingCompany || switchTargetId === String(selectedCompanyId)" @click="switchCompany"><RefreshCw class="w-4 h-4" :class="switchingCompany ? 'animate-spin' : ''" /> {{ switchingCompany ? 'Switching...' : 'Switch Company' }}</button>
+          </div>
+        </section>
         <section v-if="isCompanyScopedUser" class="settings-card settings-identity-card">
           <div class="settings-card-heading">
             <div><p class="settings-kicker">Company profile</p><h2>Organization details</h2><p>These details appear on your job posts and company profile.</p></div>
@@ -220,7 +304,7 @@ onMounted(fetchData)
           <label class="settings-field mt-4"><span>Description</span><textarea v-model="company.description" rows="4" class="setting-input" placeholder="Tell candidates about your company..."></textarea></label>
           <div class="settings-preview-row">
             <div class="settings-brand-preview"><div class="settings-logo-fallback"><Building2 class="w-5 h-5" /></div><div><strong>{{ company.name || 'Company profile' }}</strong><span>{{ companyExists ? 'Profile is active' : 'Create your company profile' }}</span></div></div>
-            <button v-if="companyExists" class="settings-secondary-button text-rose-600" :disabled="saving" @click="deleteCompanyProfile"><Trash2 class="w-4 h-4" /> Delete profile</button>
+            <button v-if="companyExists && !isHrUser" class="settings-secondary-button text-rose-600" :disabled="saving" @click="deleteCompanyProfile"><Trash2 class="w-4 h-4" /> Delete profile</button>
           </div>
         </section>
 

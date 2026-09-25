@@ -55,10 +55,12 @@ const submitError = ref('')
 const submitSuccess = ref('')
 
 const companies = ref([])
+const activeCompany = ref(null)
 const categories = ref([])
 const skills = ref([])
 const canCreateJobPost = computed(() => !isCompanyScopedUser.value || companies.value.length > 0)
 const selectedSkills = ref([])
+const activeCompanyId = () => localStorage.getItem('active_company_id') || JSON.parse(localStorage.getItem('admin_user') || 'null')?.company_id
 
 const form = reactive({
   company_id: '',
@@ -129,8 +131,9 @@ function setSkillLevel(skill, level) {
 
 async function fetchLookups() {
   try {
-    const [companyRes, categoryRes, skillRes] = await Promise.all([
-      adminApi.getCompanies({ per_page: 100 }),
+    const [companyRes, activeCompanyRes, categoryRes, skillRes] = await Promise.all([
+      isCompanyScopedUser.value ? adminApi.getManagedCompanies() : adminApi.getCompanies({ per_page: 100 }),
+      isCompanyScopedUser.value ? adminApi.getCompanyProfile() : Promise.resolve(null),
       adminApi.getJobCategories({ per_page: 100 }),
       adminApi.getSkills({ per_page: 100 }),
     ])
@@ -138,13 +141,17 @@ async function fetchLookups() {
     const pager = (res) => (res?.data?.data || res?.data || [])
     const companyData = pager(companyRes.data)
     companies.value = Array.isArray(companyData) ? companyData : (companyData ? [companyData] : [])
-    if (isCompanyScopedUser.value && companies.value[0]?.id) {
-      form.company_id = companies.value[0].id
+    if (isCompanyScopedUser.value && companies.value.length) {
+      const activeCompanyData = activeCompanyRes?.data?.data || activeCompanyRes?.data
+      activeCompany.value = activeCompanyData || companies.value.find((company) => String(company.id) === String(activeCompanyId())) || companies.value[0]
+      form.company_id = activeCompany.value.id
+      if (form.company_id) localStorage.setItem('active_company_id', String(form.company_id))
     }
     categories.value = pager(categoryRes.data)
     skills.value = pager(skillRes.data)
   } catch (e) {
     companies.value = []
+    activeCompany.value = null
     categories.value = []
     skills.value = []
   }
@@ -154,11 +161,11 @@ async function openModal() {
   resetForm()
   editingJob.value = null
   showModal.value = true
-  if (companies.value.length === 0 || categories.value.length === 0 || skills.value.length === 0) {
+  if (isCompanyScopedUser.value || companies.value.length === 0 || categories.value.length === 0 || skills.value.length === 0) {
     await fetchLookups()
   }
-  if (isCompanyScopedUser.value && companies.value[0]?.id) {
-    form.company_id = companies.value[0].id
+  if (isCompanyScopedUser.value && companies.value.length && !form.company_id) {
+    form.company_id = companies.value.find((company) => String(company.id) === String(activeCompanyId()))?.id || companies.value[0].id
   }
 }
 
@@ -562,7 +569,7 @@ onMounted(async () => {
               </label>
               <div v-if="isCompanyScopedUser" class="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-sm font-semibold text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">
                 <Building2 class="h-4 w-4 shrink-0" />
-                {{ companies[0]?.name || 'Loading company...' }}
+                {{ activeCompany?.name || 'Loading company...' }}
               </div>
               <select v-else
                 v-model="form.company_id"

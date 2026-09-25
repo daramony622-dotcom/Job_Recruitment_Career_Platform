@@ -682,12 +682,77 @@ a {
 .settings-account-list { margin-top: 1rem; }
 .settings-account-row { justify-content: flex-start; margin-top: 0; }
 .settings-account-copy { min-width: 0; flex: 1; }
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.role-tile {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  min-height: 4.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.7rem;
+  background: #fff;
+  text-align: left;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+.role-tile:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 18px rgb(15 23 42 / 8%);
+  transform: translateY(-1px);
+}
+.role-tile-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  background: #eff6ff;
+  color: #2563eb;
+}
+.role-tile-copy { min-width: 0; }
+.role-tile-copy strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.05rem;
+  line-height: 1.1;
+  font-weight: 800;
+}
+.role-tile-copy span {
+  display: block;
+  margin-top: 0.2rem;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.role-arrow { color: #94a3b8; }
+.role-violet .role-tile-icon { background: #f5f3ff; color: #7c3aed; }
+.role-amber .role-tile-icon { background: #fffbeb; color: #d97706; }
+.role-teal .role-tile-icon { background: #f0fdfa; color: #0f766e; }
 .settings-inline-link { color: #2563eb; font-size: 0.72rem; font-weight: 700; }
 .settings-empty { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 2rem; color: #64748b; font-size: 0.75rem; }
 .settings-alert { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; padding: 0.7rem 0.9rem; border-radius: 0.6rem; font-size: 0.75rem; font-weight: 700; }
 .settings-alert-error { border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; }
 .settings-alert-success { border: 1px solid #bbf7d0; background: #f0fdf4; color: #15803d; }
 .settings-loading { display: flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 12rem; color: #64748b; font-size: 0.8rem; }
+
+@media (max-width: 900px) {
+  .role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 520px) {
+  .role-grid { grid-template-columns: 1fr; }
+}
 
 .resource-modal {
   overflow-y: auto;

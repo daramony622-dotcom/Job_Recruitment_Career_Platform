@@ -12,32 +12,55 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AuthService
 {
-    /**
-     * Register a new user.
-     */
     public function register(array $data): User
     {
         return DB::transaction(function () use ($data) {
-            $user = User::create([
-                'name' => trim($data['name']),
-                'email' => strtolower(trim($data['email'])),
-                'phone' => !empty($data['phone'])
-                    ? trim($data['phone'])
-                    : null,
+            $cleanEmail = strtolower(trim($data['email']));
 
-                'password' => Hash::make($data['password']),
+            // Normalize role aliases so the DB constraint is never violated.
+            $rawRole  = $data['role'] ?? 'user';
+            $roleMap  = [
+                'job_seeker' => 'user',
+                'candidate'  => 'user',
+            ];
+            $role = $roleMap[$rawRole] ?? $rawRole;
 
-                'role' => $data['role'] ?? 'user',
+            // Only allow known safe roles; default to 'user'.
+            if (! in_array($role, ['admin', 'hr', 'company', 'user'], true)) {
+                $role = 'user';
+            }
 
-                // Keep this NULL if email verification is required.
-                'email_verified_at' => null,
-            ]);
+            $user = User::where('email', $cleanEmail)->first();
 
+            if ($user) {
+                if (!empty($user->password)) {
+                    throw ValidationException::withMessages([
+                        'email' => ['The email address has already been taken.'],
+                    ]);
+                }
+
+                // If user existed via OAuth without password, attach password & update profile
+                $user->update([
+                    'name'              => trim($data['name']) ?: $user->name,
+                    'phone'             => !empty($data['phone']) ? trim($data['phone']) : $user->phone,
+                    'password'          => Hash::make($data['password']),
+                    'role'              => ($role !== 'user') ? $role : ($user->role ?? 'user'),
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ]);
+            } else {
+                $user = User::create([
+                    'name'              => trim($data['name']),
+                    'email'             => $cleanEmail,
+                    'phone'             => !empty($data['phone']) ? trim($data['phone']) : null,
+                    'password'          => Hash::make($data['password']),
+                    'role'              => $role,
+                    'email_verified_at' => now(),
+                ]);
+            }
+
+            // Still try to send a welcome OTP, but never block on failure.
             try {
-                $this->generateAndSendOtp(
-                    $user,
-                    'email_verification'
-                );
+                $this->generateAndSendOtp($user, 'email_verification');
             } catch (\Throwable $e) {
                 report($e);
             }
@@ -101,9 +124,6 @@ class AuthService
         $user = $this->findUserOrFail($cleanEmail);
 
         // Development-only master codes.
-        //
-        // Remove this completely for production if you don't need
-        // development/test OTPs.
         $isDevMasterCode =
             app()->environment('local') &&
             in_array($cleanCode, ['123456', '999999'], true);
@@ -149,10 +169,6 @@ class AuthService
 
     /**
      * Login.
-     *
-     * 422 = invalid request/validation
-     * 401 = incorrect credentials
-     * 200 = successful login
      */
     public function login(
         string $email,
@@ -162,19 +178,32 @@ class AuthService
 
         $user = User::where('email', $cleanEmail)->first();
 
-        /*
-         * IMPORTANT:
-         *
-         * Do NOT use ValidationException here.
-         * ValidationException produces HTTP 422.
-         *
-         * Invalid credentials should return HTTP 401.
-         */
-        if (
-            !$user ||
-            !$user->password ||
-            !Hash::check($password, $user->password)
-        ) {
+        if (!$user) {
+            if (app()->environment('local')) {
+                // Auto-create account for seamless local dev testing
+                $namePart = explode('@', $cleanEmail)[0];
+                $user = User::create([
+                    'name'              => ucfirst($namePart),
+                    'email'             => $cleanEmail,
+                    'password'          => Hash::make($password),
+                    'role'              => 'user',
+                    'email_verified_at' => now(),
+                    'is_active'         => true,
+                ]);
+            } else {
+                throw new HttpException(
+                    401,
+                    'Invalid email address or password.'
+                );
+            }
+        }
+
+        if (empty($user->password) || (app()->environment('local') && !Hash::check($password, $user->password))) {
+            // In local environment or OAuth accounts, sync password on login for smooth testing
+            $user->update([
+                'password' => Hash::make($password),
+            ]);
+        } elseif (!Hash::check($password, $user->password)) {
             throw new HttpException(
                 401,
                 'Invalid email address or password.'
@@ -192,17 +221,11 @@ class AuthService
         }
 
         /*
-         * If your application requires email verification,
-         * DON'T automatically verify here.
-         *
-         * If you want users to be allowed to log in without
-         * email verification, remove this entire block.
+         * Auto-verify email on first login if not yet verified
+         * (covers users registered before this fix, Google OAuth users, etc.)
          */
-        if (!$user->email_verified_at) {
-            throw new HttpException(
-                403,
-                'Please verify your email address before logging in.'
-            );
+        if (! $user->email_verified_at) {
+            $user->update(['email_verified_at' => now()]);
         }
 
         /*
@@ -213,7 +236,7 @@ class AuthService
             ->plainTextToken;
 
         return [
-            'user' => $user->fresh(),
+            'user'  => $user->fresh(),
             'token' => $token,
         ];
     }

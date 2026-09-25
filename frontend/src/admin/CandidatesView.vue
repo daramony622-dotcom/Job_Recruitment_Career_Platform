@@ -27,11 +27,13 @@ const router = useRouter()
 const route = useRoute()
 const loggedInUser = JSON.parse(localStorage.getItem('admin_user') || localStorage.getItem('job_platform_user') || 'null')
 const canManageRoles = computed(() => loggedInUser?.role === 'admin')
+const canManageEmployees = computed(() => canManageRoles.value || loggedInUser?.role === 'hr')
 
 const loading = ref(false)
 const error = ref('')
 const notice = ref('')
 const candidates = ref([])
+const companies = ref([])
 const pagination = reactive({ current_page: 1, last_page: 1, total: 0, per_page: 20 })
 
 const filters = reactive({
@@ -61,6 +63,17 @@ async function fetchCandidates() {
     error.value = e.response?.data?.message || 'Failed to load accounts.'
   } finally {
     loading.value = false
+  }
+}
+
+async function fetchCompanies() {
+  if (!canManageRoles.value) return
+  try {
+    const { data } = await adminApi.getCompanies({ per_page: 100 })
+    const payload = data?.data || data || {}
+    companies.value = Array.isArray(payload) ? payload : (payload.data || [])
+  } catch {
+    companies.value = []
   }
 }
 
@@ -159,6 +172,8 @@ const editForm = reactive({
   email: '',
   password: '',
   role: 'user',
+  company_id: '',
+  is_active: true,
 })
 
 function openEdit(c) {
@@ -167,6 +182,8 @@ function openEdit(c) {
   editForm.email = c.email || ''
   editForm.password = ''
   editForm.role = c.role || 'user'
+  editForm.company_id = c.company_id || c.company?.id || ''
+  editForm.is_active = c.is_active !== false
   editError.value = ''
   editSuccess.value = ''
   showEditModal.value = true
@@ -183,8 +200,13 @@ async function submitEdit() {
   editError.value = ''
   editSuccess.value = ''
   try {
-    await adminApi.updateCandidate(editingCandidate.value.id, { role: editForm.role })
-    editSuccess.value = 'User role updated successfully.'
+    const payload = canManageRoles.value
+      ? { role: editForm.role, company_id: editForm.role === 'hr' ? (editForm.company_id || null) : null }
+      : { name: editForm.name, email: editForm.email, is_active: editForm.is_active }
+    await adminApi.updateCandidate(editingCandidate.value.id, payload)
+    editSuccess.value = canManageRoles.value
+      ? 'User access and company assignment updated successfully.'
+      : 'Employee account updated successfully.'
     await fetchCandidates()
     setTimeout(closeEditModal, 1200)
   } catch (e) {
@@ -216,7 +238,10 @@ async function onDelete(c) {
   }
 }
 
-onMounted(fetchCandidates)
+onMounted(() => {
+  fetchCandidates()
+  fetchCompanies()
+})
 </script>
 
 <template>
@@ -347,7 +372,7 @@ onMounted(fetchCandidates)
                     <Eye class="w-3.5 h-3.5" />
                   </button>
                   <button
-                    v-if="canManageRoles && (c.role !== 'admin' || Number(c.id) !== Number(loggedInUser?.id))"
+                    v-if="canManageEmployees && (canManageRoles || c.role === 'user' || c.role === 'job_seeker')"
                     class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                     title="Edit User"
                     @click="openEdit(c)"
@@ -528,6 +553,27 @@ onMounted(fetchCandidates)
               <option value="hr">HR Manager</option>
               <option value="admin">Administrator</option>
             </select>
+          </div>
+
+          <div v-if="canManageRoles && editForm.role === 'hr'">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2" for="edit-company">Assigned Company</label>
+            <select id="edit-company" v-model="editForm.company_id" class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors">
+              <option value="">No company assigned</option>
+              <option v-for="item in companies" :key="item.id" :value="item.id">{{ item.name }}</option>
+            </select>
+            <p class="mt-1.5 text-xs text-slate-500">HR can manage only this company from Company settings.</p>
+          </div>
+
+          <div v-if="!canManageRoles" class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800/50">
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="text-xs font-semibold text-slate-600 dark:text-slate-300" for="employee-name">Name<input id="employee-name" v-model="editForm.name" type="text" class="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
+              <label class="text-xs font-semibold text-slate-600 dark:text-slate-300" for="employee-email">Email<input id="employee-email" v-model="editForm.email" type="email" class="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900" /></label>
+            </div>
+            <label class="flex items-center gap-3 text-sm font-semibold text-slate-700 dark:text-slate-200" for="employee-active">
+              <input id="employee-active" v-model="editForm.is_active" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-blue-600" />
+              Employee account is active
+            </label>
+            <p class="mt-1.5 text-xs text-slate-500">HR can update employee contact details and account availability.</p>
           </div>
 
           <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">

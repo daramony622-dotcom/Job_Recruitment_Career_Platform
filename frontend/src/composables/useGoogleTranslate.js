@@ -18,6 +18,7 @@ let busyTimer = null
  * remove/replace those nodes it throws "removeChild ... not a child
  * of this node" and the UI breaks. These guards make it safe.
  * ------------------------------------------------------------------ */
+
 function patchDomForTranslate() {
   if (typeof Node !== 'function' || !Node.prototype || Node.prototype.__gtPatched) return
 

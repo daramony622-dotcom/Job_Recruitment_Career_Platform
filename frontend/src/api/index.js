@@ -1,18 +1,22 @@
 import http from './http'
 
 /**
- * Dynamically check if the logged-in user has HR or Company roles.
- * Reads fallback keys to prevent null pointer routing errors.
+ * Get the current logged-in user role.
  */
-const isCompanyScopedRole = () => {
+const getCurrentUserRole = () => {
   try {
     const rawUser = localStorage.getItem('admin_user') || localStorage.getItem('user')
     const user = JSON.parse(rawUser || 'null')
-    return ['hr', 'company'].includes(user?.role)
+    return user?.role || null
   } catch {
-    return false
+    return null
   }
 }
+
+/**
+ * HR and company users use company-scoped endpoints; admin uses admin endpoints.
+ */
+const isCompanyScopedRole = () => ['hr', 'company'].includes(getCurrentUserRole())
 
 const jobPostPrefix = () => (isCompanyScopedRole() ? '/company/job-posts' : '/admin/job-posts')
 const lookupPrefix = () => (isCompanyScopedRole() ? '/company' : '/admin')
@@ -57,7 +61,7 @@ export const adminApi = {
   },
 
   getUsers(params = {}) {
-    return http.get('/admin/users', { params })
+    return isCompanyScopedRole() ? http.get('/company/employees', { params }) : http.get('/admin/users', { params })
   },
 
   storeUser(data) {
@@ -65,11 +69,11 @@ export const adminApi = {
   },
 
   showCandidate(id) {
-    return http.get(`/admin/users/${id}`)
+    return isCompanyScopedRole() ? http.get(`/company/employees/${id}`) : http.get(`/admin/users/${id}`)
   },
 
   updateCandidate(id, data) {
-    return http.put(`/admin/users/${id}`, data)
+    return isCompanyScopedRole() ? http.put(`/company/employees/${id}`, data) : http.put(`/admin/users/${id}`, data)
   },
 
   deleteUser(id) {
@@ -100,6 +104,14 @@ export const adminApi = {
     return http.get('/company/profile')
   },
 
+  getManagedCompanies() {
+    return http.get('/company/available')
+  },
+
+  switchCompany(companyId) {
+    return http.post('/company/switch', { company_id: companyId })
+  },
+
   storeCompanyProfile(data) {
     if (data instanceof FormData) {
       return http.post('/company/profile', data, {
@@ -126,7 +138,7 @@ export const adminApi = {
   getCompanies(params = {}) {
     return isCompanyScopedRole()
       ? http.get('/company/profile')
-      : http.get(`${lookupPrefix()}/companies`, { params })
+      : http.get('/admin/companies', { params })
   },
 
   showCompany(id) {

@@ -16,6 +16,8 @@ class StoreCompanyRequest extends FormRequest
         return [
             // user_id is only required when admin creates a company on behalf of a user
             'user_id'      => ['sometimes', 'required', 'integer', 'exists:users,id'],
+            'manager_ids' => ['sometimes', 'array'],
+            'manager_ids.*' => ['integer', 'exists:users,id'],
             'name'         => ['required', 'string', 'max:255'],
             'website'      => ['nullable', 'url', 'max:255'],
             'email'        => ['nullable', 'email', 'max:255'],

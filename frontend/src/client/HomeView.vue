@@ -46,7 +46,7 @@ function handleClearFilters() {
         v-model:category="selectedCategory"
         v-model:skill="selectedSkill"
         v-model:location="selectedLocation"
-        v-model:salary="seletedSalary"
+        v-model:salary="selectedSalary"
         v-model:time="selectedTime"
         :has-active-filters="Boolean(selectedCategory || selectedSkill || selectedLocation || selectedSalary || selectedTime)"
         @reset="handleClearFilters"

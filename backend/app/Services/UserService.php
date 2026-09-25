@@ -13,7 +13,7 @@ class UserService
      */
     public function paginate(array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = User::with(['profile', 'skills']);
+        $query = User::with(['profile', 'skills', 'company']);
 
         if (!empty($filters['role'])) {
             if ($filters['role'] === 'user' || $filters['role'] === 'job_seeker') {
@@ -39,7 +39,7 @@ class UserService
      */
     public function getUserDetails(int $id): ?User
     {
-        return User::with(['profile', 'skills', 'company'])->find($id);
+        return User::with(['profile', 'skills', 'company', 'cvs', 'educations', 'experiences', 'applications.jobPost.company'])->find($id);
     }
 
     /**
@@ -65,7 +65,7 @@ class UserService
 
         $user->update($data);
 
-        return $user->fresh(['profile', 'skills']);
+        return $user->fresh(['profile', 'skills', 'company']);
     }
 
     /**

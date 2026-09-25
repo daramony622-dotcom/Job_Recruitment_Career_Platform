@@ -37,7 +37,7 @@ class ApplicationController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => $application->load(['jobPost.company', 'jobSeeker.profile', 'interviews'])
+            'data'   => $application->load(['jobPost.company', 'jobSeeker.profile', 'jobSeeker.cvs', 'jobSeeker.educations', 'jobSeeker.experiences', 'jobSeeker.skills', 'interviews'])
         ]);
     }
 

@@ -15,7 +15,6 @@ use App\Http\Controllers\Api\Admin\SettingController;
 use App\Http\Controllers\Api\Admin\SkillCategoryController;
 use App\Http\Controllers\Api\Admin\SkillController;
 use App\Http\Controllers\Api\Admin\UserController;
-use App\Http\Requests\Application\UpdateApplicationStatusRequest;
 use App\Http\Controllers\Api\ContactController;
 use Illuminate\Support\Facades\Route;
 

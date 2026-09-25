@@ -3,7 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { initTheme } from './composables/useTheme'
 import { useAuth } from './composables/useAuth'
-import { useLanguage } from './composables/useLanguage'
+import LanguageSwitcher from './admin/LanguageSwitcher.vue'
 import AdminLayout from './admin/AdminLayout.vue'
 
 const { fetchCurrentUser, fetchProfileAvatar } = useAuth()

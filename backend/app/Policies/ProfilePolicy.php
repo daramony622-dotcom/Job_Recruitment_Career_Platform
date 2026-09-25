@@ -21,7 +21,7 @@ class ProfilePolicy
      */
     public function view(User $user, Profile $profile): bool
     {
-        return method_exists($user, 'hasRole') && $user->hasRole('admin') 
+        return $user->isAdmin() || $user->isHr()
             || $user->id === $profile->user_id 
             || $profile->is_profile_visible;
     }
@@ -39,7 +39,7 @@ class ProfilePolicy
      */
     public function update(User $user, Profile $profile): bool
     {
-        return method_exists($user, 'hasRole') && $user->hasRole('admin') 
+        return $user->isAdmin() || $user->isHr()
             || $user->id === $profile->user_id;
     }
 
@@ -48,7 +48,7 @@ class ProfilePolicy
      */
     public function delete(User $user, Profile $profile): bool
     {
-        return method_exists($user, 'hasRole') && $user->hasRole('admin') 
+        return $user->isAdmin() || $user->isHr()
             || $user->id === $profile->user_id;
     }
 
@@ -57,7 +57,7 @@ class ProfilePolicy
      */
     public function restore(User $user, Profile $profile): bool
     {
-        return method_exists($user, 'hasRole') && $user->hasRole('admin');
+        return $user->isAdmin() || $user->isHr();
     }
 
     /**
@@ -65,6 +65,6 @@ class ProfilePolicy
      */
     public function forceDelete(User $user, Profile $profile): bool
     {
-        return method_exists($user, 'hasRole') && $user->hasRole('admin');
+        return $user->isAdmin() || $user->isHr();
     }
 }

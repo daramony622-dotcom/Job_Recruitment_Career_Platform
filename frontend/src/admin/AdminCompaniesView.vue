@@ -67,6 +67,14 @@ async function fetchCompanies() {
   error.value = ''
 
   try {
+    if (isCompanyScopedUser.value) {
+      const { data } = await adminApi.getCompanyProfile()
+      const profile = data.data || data
+      companies.value = profile?.id ? [profile] : []
+      Object.assign(pagination, { current_page: 1, last_page: 1, total: companies.value.length })
+      return
+    }
+
     const params = {
       per_page: pagination.per_page,
       page: pagination.current_page,
@@ -75,11 +83,8 @@ async function fetchCompanies() {
     }
 
     const { data } = await adminApi.getCompanies(params)
-    const profile = data.data || data
-    const pager = isCompanyScopedUser.value
-      ? { data: profile?.id ? [profile] : [], current_page: 1, last_page: 1, total: profile?.id ? 1 : 0, per_page: 1 }
-      : profile
-    companies.value = pager.data || []
+    const pager = data.data || data
+    companies.value = Array.isArray(pager) ? pager : (pager.data || [])
 
     Object.assign(pagination, {
       current_page: pager.current_page || 1,
@@ -130,6 +135,7 @@ const sizeOptions = [
 
 const form = reactive({
   user_id: '',
+  manager_ids: [],
   name: '',
   website: '',
   email: '',
@@ -169,6 +175,7 @@ function removeCover() {
 
 function resetForm() {
   form.user_id = ''
+  form.manager_ids = []
   form.name = ''
   form.website = ''
   form.email = ''
@@ -209,6 +216,7 @@ function openEdit(company) {
   editingCompany.value = company
   Object.assign(form, {
     user_id: company.user_id || company.user?.id || '',
+    manager_ids: (company.assigned_managers || []).map((manager) => String(manager.id)),
     name: company.name || '',
     website: company.website || '',
     email: company.email || '',
@@ -259,6 +267,7 @@ async function submitCompany() {
 
     const formData = new FormData()
     if (form.user_id && !editingCompany.value) formData.append('user_id', form.user_id)
+    form.manager_ids.forEach((managerId) => formData.append('manager_ids[]', managerId))
     if (form.name) formData.append('name', form.name)
     if (form.website) formData.append('website', form.website)
     if (form.email) formData.append('email', form.email)
@@ -542,7 +551,7 @@ onMounted(() => {
               General Details
             </h4>
 
-            <!-- Owner Account -->
+            <!-- Owner and assigned HR accounts -->
             <div v-if="!editingCompany">
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 Owner Account <span class="text-rose-600 dark:text-rose-400">*</span>
@@ -563,6 +572,17 @@ onMounted(() => {
               <p v-if="users.length === 0 && showModal" class="text-xs text-amber-600 dark:text-amber-400 mt-1">
                 No HR users found. Create an HR account first in Users &amp; HR.
               </p>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5" for="company-managers">
+                Assigned HR Managers <span class="text-xs text-slate-400 font-normal ml-1">(multiple allowed)</span>
+              </label>
+              <div class="relative">
+                <UsersIcon class="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <select id="company-managers" v-model="form.manager_ids" multiple size="4" class="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 outline-none focus:border-blue-500 transition-colors">
+                  <option v-for="u in users" :key="u.id" :value="String(u.id)">{{ u.name }} ({{ u.email }})</option>
+                </select>
+              </div>
             </div>
 
             <!-- Name & Industry -->

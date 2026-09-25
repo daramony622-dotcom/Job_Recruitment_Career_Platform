@@ -15,6 +15,8 @@ class UpdateCompanyRequest extends FormRequest
     {
         return [
             'name'         => ['sometimes', 'required', 'string', 'max:255'],
+            'manager_ids' => ['sometimes', 'array'],
+            'manager_ids.*' => ['integer', 'exists:users,id'],
             'website'      => ['sometimes', 'nullable', 'url', 'max:255'],
             'email'        => ['sometimes', 'nullable', 'email', 'max:255'],
             'phone'        => ['sometimes', 'nullable', 'string', 'max:20'],

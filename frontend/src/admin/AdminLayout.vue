@@ -36,49 +36,28 @@ async function refreshAdminProfile() {
 onMounted(refreshAdminProfile)
 
 const navGroups = computed(() => {
-  const workspaceItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Job Posts', path: '/job-posts', icon: Briefcase },
-  ]
-
-  if (isCompanyScopedUser.value) {
-    return [
-      { label: 'MAIN', items: workspaceItems },
-      {
-        label: 'RECRUITMENT',
-        items: [
-          { name: 'Applications', path: '/admin-resources/applications', icon: FileText },
-          { name: 'Interviews', path: '/admin-resources/interviews', icon: CalendarClock },
-          { name: 'Job Categories', path: '/admin-resources/categories', icon: Tags },
-          { name: 'Skill Categories', path: '/admin-resources/skill-categories', icon: FolderTree },
-          { name: 'Skills Directory', path: '/admin-resources/skills', icon: Wrench },
-          { name: 'Reports', path: '/reports', icon: FileText },
-          { name: 'Settings', path: '/settings', icon: Settings },
-        ],
-      },
-    ]
-  }
-
+  const companyOnly = isCompanyScopedUser.value
   return [
     {
       label: 'MAIN',
       items: [
-        ...workspaceItems,
-        { name: 'Users & HR', path: '/candidates', icon: Users },
-        { name: 'Companies', path: '/admin-companies', icon: Building2 },
+        { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+        { name: 'Job Posts', path: '/job-posts', icon: Briefcase },
+        { name: 'Applications', path: '/admin-resources/applications', icon: FileText },
+        { name: 'Interviews', path: '/admin-resources/interviews', icon: CalendarClock },
+        ...(user.value?.role !== 'hr' ? [{ name: 'Companies', path: '/admin-companies', icon: Building2 }] : []),
+        ...(!companyOnly || user.value?.role === 'hr' ? [{ name: 'Users & Candidates', path: '/candidates', icon: Users }] : []),
       ],
     },
     {
-      label: 'SHORTCUTS',
+      label: 'MANAGEMENT & TAXONOMY',
       items: [
-        { name: 'Applications', path: '/admin-resources/applications', icon: FileText },
-        { name: 'Interviews', path: '/admin-resources/interviews', icon: CalendarClock },
-        { name: 'Reports', path: '/reports', icon: FileText },
         { name: 'Job Categories', path: '/admin-resources/categories', icon: Tags },
         { name: 'Skill Categories', path: '/admin-resources/skill-categories', icon: FolderTree },
-        { name: 'Skills', path: '/admin-resources/skills', icon: Wrench },
-        { name: 'Messages', path: '/admin-resources/messages', icon: Mail },
-        { name: 'Security', path: '/security', icon: ShieldAlert },
+        { name: 'Skills Directory', path: '/admin-resources/skills', icon: Wrench },
+        ...(!companyOnly ? [{ name: 'Inquiries & Messages', path: '/admin-resources/messages', icon: Mail }] : []),
+        { name: 'Reports', path: '/reports', icon: FileText },
+        ...(!companyOnly ? [{ name: 'Security', path: '/security', icon: ShieldAlert }] : []),
         { name: 'Settings', path: '/settings', icon: Settings },
       ],
     },
@@ -97,9 +76,16 @@ function isActive(item) {
   return route.path === item.path || route.path.startsWith(`${item.path}/`)
 }
 
-function logout() {
-  localStorage.clear()
-  window.location.href = '/login'
+async function logout() {
+  try {
+    await adminApi.logout()
+  } catch {
+    /* Ignore 401 or network errors on logout */
+  } finally {
+    localStorage.clear()
+    sessionStorage.clear()
+    window.location.href = '/login'
+  }
 }
 </script>
 

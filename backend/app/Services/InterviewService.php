@@ -25,9 +25,14 @@ class InterviewService
         ]);
 
         // Authorization scoping based on user role
-        if ($user->isAdmin()) {
-            // Admin can see all interviews.
-        } elseif ($user->isHr() || $user->hasRole('company') || $user->hasRole('hr')) {
+        if ($user->isAdmin() || $user->isHr()) {
+            // Admin and HR can see all interviews platform-wide.
+            if (!empty($filters['company_id'])) {
+                $query->whereHas('job', function ($jobQuery) use ($filters) {
+                    $jobQuery->where('company_id', $filters['company_id']);
+                });
+            }
+        } elseif ($user->hasRole('company') || $user->hasRole('hr')) {
             $companyId = $user->company?->id;
             $query->where(function ($q) use ($user, $companyId) {
                 $q->where('interviewer_id', $user->id);
@@ -70,7 +75,7 @@ class InterviewService
         $interview = DB::transaction(function () use ($data, $creator) {
             $application = Application::with(['jobPost', 'jobSeeker'])->findOrFail($data['application_id']);
 
-            if (! $creator->isAdmin()) {
+            if (! $creator->isAdmin() && ! $creator->isHr()) {
                 $companyId = $creator->company?->id;
 
                 if (! $companyId || $application->jobPost->company_id !== $companyId) {
@@ -97,10 +102,13 @@ class InterviewService
             return $interview->load(['application', 'job', 'applicant', 'interviewer']);
         });
 
-        // Dispatch only after the interview is committed so queued notifications
-        // can safely serialize and reload the interview model.
+        // Dispatch only after the interview is committed
         if ($interview->applicant) {
-            $interview->applicant->notify(new InterviewScheduled($interview));
+            try {
+                $interview->applicant->notify(new InterviewScheduled($interview));
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
 
         return $interview;

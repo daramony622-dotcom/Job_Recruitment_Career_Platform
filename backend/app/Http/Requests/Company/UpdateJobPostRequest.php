@@ -16,7 +16,7 @@ class UpdateJobPostRequest extends FormRequest
         /** @var \App\Models\User $user */
         $user = $this->user();
 
-        return $user && ($user->isAdmin() || $user->isHr());
+        return $user && ($user->isAdmin() || ($user->isHr() && $user->company !== null));
     }
 
     /**

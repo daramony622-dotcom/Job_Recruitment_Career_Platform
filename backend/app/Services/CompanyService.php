@@ -20,7 +20,13 @@ class CompanyService
                 $data['cover_image'] = $data['cover_image']->store('companies/covers', 'public');
             }
 
-            return Company::create($data);
+            $company = Company::create($data);
+
+            if ($user->role === 'company') {
+                $user->update(['company_id' => $company->id]);
+            }
+
+            return $company;
         });
     }
 
@@ -48,5 +54,10 @@ class CompanyService
 
             return $company;
         });
+    }
+
+    public function syncManagers(Company $company, array $managerIds): void
+    {
+        $company->assignedManagers()->sync($managerIds);
     }
 }

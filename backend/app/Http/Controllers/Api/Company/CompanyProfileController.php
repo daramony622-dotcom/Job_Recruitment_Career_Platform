@@ -8,6 +8,7 @@ use App\Http\Requests\Company\UpdateCompanyRequest;
 use App\Services\CompanyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\Company;
 
 class CompanyProfileController extends Controller
 {
@@ -21,7 +22,17 @@ class CompanyProfileController extends Controller
     // GET /hr/profile
     public function show(Request $request): JsonResponse
     {
-        $company = $request->user()->company;
+        $user = $request->user();
+        $company = $user->company;
+
+        if (! $company) {
+            $company = $user->assignedCompanies()->orderBy('name')->first()
+                ?? $user->ownedCompany()->first();
+
+            if ($company) {
+                $user->update(['company_id' => $company->id]);
+            }
+        }
 
         if (!$company) {
             return response()->json(['message' => self::PROFILE_NOT_FOUND], 404);
@@ -30,9 +41,46 @@ class CompanyProfileController extends Controller
         return response()->json(['data' => $company]);
     }
 
+    public function available(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $companies = Company::query()
+            ->where(function ($query) use ($user) {
+                $query->whereHas('assignedManagers', fn ($assigned) => $assigned->whereKey($user->id))
+                    ->orWhere('user_id', $user->id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        return response()->json(['data' => $companies]);
+    }
+
+    public function switch(Request $request): JsonResponse
+    {
+        $validated = $request->validate(['company_id' => ['required', 'integer', 'exists:companies,id']]);
+        $user = $request->user();
+        $company = Company::query()
+            ->whereKey($validated['company_id'])
+            ->where(function ($query) use ($user) {
+                $query->whereHas('assignedManagers', fn ($assigned) => $assigned->whereKey($user->id))
+                    ->orWhere('user_id', $user->id);
+            })
+            ->first();
+
+        if (! $company) {
+            return response()->json(['message' => 'This company is not assigned to your HR account.'], 403);
+        }
+
+        $user->update(['company_id' => $company->id]);
+
+        return response()->json(['data' => $company, 'message' => 'Company switched successfully.']);
+    }
+
     // POST /hr/profile
     public function store(StoreCompanyRequest $request): JsonResponse
     {
+        abort_if($request->user()->isHr(), 403, 'Only an administrator can assign a company to an HR account.');
+
         if ($request->user()->company) {
             return response()->json(['message' => 'Company profile already exists.'], 422);
         }
@@ -64,6 +112,8 @@ class CompanyProfileController extends Controller
 
     public function destroy(Request $request): JsonResponse
     {
+        abort_if($request->user()->isHr(), 403, 'HR accounts cannot delete company profiles.');
+
         $company = $request->user()->company;
 
         if (!$company) {

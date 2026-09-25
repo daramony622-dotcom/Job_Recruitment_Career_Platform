@@ -14,7 +14,7 @@ class EnsureHasCompany
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (!$user || (!$user->company && !$user->isAdmin())) {
+        if (!$user || (!$user->company && !$user->isAdmin() && !$user->isHr())) {
             return response()->json([
                 'message' => 'Forbidden — associated company profile required.'
             ], 403);

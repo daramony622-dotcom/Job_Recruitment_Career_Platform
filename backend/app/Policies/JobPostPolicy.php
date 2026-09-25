@@ -25,7 +25,6 @@ class JobPostPolicy
     public function view(User $user, JobPost $jobPost): bool
     {
         return $user->isAdmin()
-            || $user->role === 'hr'
             || ($user->company && $user->company->id === $jobPost->company_id);
     }
 
@@ -35,7 +34,7 @@ class JobPostPolicy
     public function create(User $user): bool
     {
         // Admin, HR, and company owners can create
-        return $user->isAdmin() || $user->isHr() || ($user->company !== null);
+        return $user->isAdmin() || ($user->isHr() && $user->company !== null) || ($user->company !== null);
     }
 
     /**
@@ -44,7 +43,6 @@ class JobPostPolicy
     public function update(User $user, JobPost $jobPost): bool
     {
         return $user->isAdmin()
-            || $user->role === 'hr'
             || ($user->company && $user->company->id === $jobPost->company_id);
     }
 
@@ -54,7 +52,6 @@ class JobPostPolicy
     public function delete(User $user, JobPost $jobPost): bool
     {
         return $user->isAdmin()
-            || $user->role === 'hr'
             || ($user->company && $user->company->id === $jobPost->company_id);
     }
 
@@ -64,7 +61,6 @@ class JobPostPolicy
     public function restore(User $user, JobPost $jobPost): bool
     {
         return $user->isAdmin()
-            || $user->role === 'hr'
             || ($user->company && $user->company->id === $jobPost->company_id);
     }
 

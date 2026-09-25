@@ -7,7 +7,6 @@ import {
   Github, Linkedin, Send, CheckCircle2, MessageSquare, ArrowRight,
   Search, FileText, Bell, Building2
 } from 'lucide-vue-next'
-
 // ─── Team Members (1st Backend, 2nd Backend, 3rd Frontend) ─────────────────────
 const team = [
   {
@@ -190,7 +189,7 @@ const stats = [
 
               <!-- Name & Title -->
               <div class="text-center space-y-1">
-                <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">{{ member.name }}</h3>
+                <h3 class="notranslate text-lg font-extrabold text-slate-900 dark:text-white" translate="no">{{ member.name }}</h3>
                 <p class="text-xs font-bold text-[#0b1329] dark:text-cyan-400">{{ member.role }}</p>
               </div>
 
@@ -206,7 +205,7 @@ const stats = [
                   :key="stk"
                   class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold"
                 >
-                  {{ stk }}
+                  <span class="notranslate" translate="no">{{ stk }}</span>
                 </span>
               </div>
             </div>

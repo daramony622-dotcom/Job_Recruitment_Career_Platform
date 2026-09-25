@@ -67,6 +67,11 @@ class Profile extends Model
         return $this->hasMany(Experience::class, 'user_id', 'user_id');
     }
 
+    public function cvs(): HasMany
+    {
+        return $this->hasMany(CV::class, 'user_id', 'user_id');
+    }
+
     // -------------------------------------------------------------------------
     // Scopes
     // -------------------------------------------------------------------------

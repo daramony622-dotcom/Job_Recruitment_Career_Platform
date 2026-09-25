@@ -8,7 +8,8 @@ import axios from 'axios'
  * ========================================================================== */
 
 const rawBaseURL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:8000/api'
 
 export const API_URL = rawBaseURL.replace(/\/+$/, '')
 
@@ -27,10 +28,13 @@ const ADMIN_KEY = 'admin_user'
  * ========================================================================== */
 
 export const resolveAssetUrl = (path) => {
-  if (!path) return ''
+  if (!path) {
+    return ''
+  }
 
   const value = String(path).trim()
 
+  // Already a complete URL
   if (/^(https?:|blob:|data:)/i.test(value)) {
     return value
   }
@@ -45,30 +49,22 @@ export const resolveAssetUrl = (path) => {
 }
 
 /* ==========================================================================
- * ROLE / REDIRECT HELPERS
- *
- * Single source of truth for "which dashboard does this user land on".
- * Login.vue and Register.vue both call this instead of keeping their own
- * (previously divergent) copies of this logic.
+ * ROLE / DASHBOARD HELPER
  * ========================================================================== */
 
 export const dashboardPathFor = (user) => {
   const role = String(user?.role || '').toLowerCase()
 
-  if (role === 'admin' || user?.is_admin) {
-    return '/admin/dashboard'
+  if (
+    role === 'admin' ||
+    role === 'hr' ||
+    role === 'company' ||
+    user?.is_admin === true
+  ) {
+    return '/dashboard'
   }
 
-  switch (role) {
-    case 'hr':
-    case 'company':
-      return '/company/dashboard'
-
-    case 'user':
-    case 'job_seeker':
-    default:
-      return '/user/dashboard'
-  }
+  return '/profile'
 }
 
 /* ==========================================================================
@@ -77,7 +73,11 @@ export const dashboardPathFor = (user) => {
 
 const readToken = () => {
   try {
-    return localStorage.getItem(TOKEN_KEY)
+    return (
+      localStorage.getItem('token') ||
+      localStorage.getItem(TOKEN_KEY) ||
+      null
+    )
   } catch {
     return null
   }
@@ -85,13 +85,17 @@ const readToken = () => {
 
 const readUser = () => {
   try {
-    const value = localStorage.getItem(USER_KEY)
+    const raw =
+      localStorage.getItem('user') ||
+      localStorage.getItem(USER_KEY) ||
+      localStorage.getItem(ADMIN_KEY) ||
+      null
 
-    if (!value) {
+    if (!raw) {
       return null
     }
 
-    return JSON.parse(value)
+    return JSON.parse(raw)
   } catch {
     return null
   }
@@ -103,6 +107,7 @@ const readUser = () => {
 
 const token = ref(readToken())
 const user = ref(readUser())
+
 const profileAvatar = ref('')
 const isLoading = ref(false)
 const error = ref('')
@@ -118,17 +123,16 @@ const isAuthenticated = computed(() => {
 const api = axios.create({
   baseURL: API_URL,
 
+  timeout: 20000,
+
   headers: {
     Accept: 'application/json',
-    'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   },
-
-  timeout: 20000,
 })
 
 /* ==========================================================================
- * AUTH STATE CLEANUP
+ * CLEAR AUTH STATE
  * ========================================================================== */
 
 const clearAuthState = () => {
@@ -137,11 +141,70 @@ const clearAuthState = () => {
   profileAvatar.value = ''
 
   try {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
     localStorage.removeItem(ADMIN_KEY)
   } catch {
-    // Ignore localStorage errors.
+    // Ignore localStorage errors
+  }
+}
+
+/* ==========================================================================
+ * SAVE AUTH DATA
+ * ========================================================================== */
+
+const persistAuthData = (
+  authToken,
+  userData
+) => {
+  token.value = authToken || null
+  user.value = userData || null
+
+  try {
+    if (authToken) {
+      const tokenStr = String(authToken)
+      localStorage.setItem('token', tokenStr)
+      localStorage.setItem(TOKEN_KEY, tokenStr)
+    } else {
+      localStorage.removeItem('token')
+      localStorage.removeItem(TOKEN_KEY)
+    }
+
+    if (userData) {
+      const userStr = JSON.stringify(userData)
+      localStorage.setItem('user', userStr)
+      localStorage.setItem(USER_KEY, userStr)
+
+      const role = String(
+        userData.role || ''
+      ).toLowerCase()
+
+      if (
+        role === 'admin' ||
+        role === 'hr' ||
+        role === 'company' ||
+        userData.is_admin === true
+      ) {
+        localStorage.setItem(
+          ADMIN_KEY,
+          userStr
+        )
+      } else {
+        localStorage.removeItem(ADMIN_KEY)
+      }
+    } else {
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      localStorage.removeItem(USER_KEY)
+      localStorage.removeItem(ADMIN_KEY)
+    }
+  } catch (storageError) {
+    console.warn(
+      'Unable to save authentication data:',
+      storageError
+    )
   }
 }
 
@@ -154,26 +217,26 @@ api.interceptors.request.use(
     if (token.value) {
       config.headers = config.headers || {}
 
-      config.headers.Authorization = `Bearer ${token.value}`
+      config.headers.Authorization =
+        `Bearer ${token.value}`
     }
 
     return config
   },
-  (error) => Promise.reject(error)
+
+  (requestError) => {
+    return Promise.reject(requestError)
+  }
 )
 
 /* ==========================================================================
  * RESPONSE INTERCEPTOR
- *
- * IMPORTANT:
- * Do NOT clear authentication for a failed login.
- *
- * Login can legitimately return 401 when credentials are incorrect.
- * Only clear the stored session for protected API requests.
  * ========================================================================== */
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response
+  },
 
   (err) => {
     const status = err?.response?.status
@@ -182,11 +245,27 @@ api.interceptors.response.use(
       err?.config?.url || ''
     )
 
+    /*
+     * Public authentication endpoints.
+     *
+     * We should NOT remove an existing session just because
+     * one of these endpoints returned 401.
+     */
+
     const isLoginRequest =
       requestUrl.includes('/auth/login')
 
     const isRegisterRequest =
       requestUrl.includes('/auth/register')
+
+    const isVerifyOtpRequest =
+      requestUrl.includes('/auth/verify-otp')
+
+    const isForgotPasswordRequest =
+      requestUrl.includes('/auth/forgot-password')
+
+    const isResetPasswordRequest =
+      requestUrl.includes('/auth/reset-password')
 
     const isGoogleRequest =
       requestUrl.includes('/auth/google')
@@ -197,16 +276,21 @@ api.interceptors.response.use(
     const isPublicAuthRequest =
       isLoginRequest ||
       isRegisterRequest ||
+      isVerifyOtpRequest ||
+      isForgotPasswordRequest ||
+      isResetPasswordRequest ||
       isGoogleRequest ||
       isTelegramRequest
 
     /*
-     * 401 from protected endpoints means the saved token
-     * is no longer valid.
-     *
-     * Do NOT clear state for login itself.
+     * A 401 from a protected endpoint means the current
+     * saved token is invalid/expired.
      */
-    if (status === 401 && !isPublicAuthRequest) {
+
+    if (
+      status === 401 &&
+      !isPublicAuthRequest
+    ) {
       clearAuthState()
     }
 
@@ -215,7 +299,7 @@ api.interceptors.response.use(
 )
 
 /* ==========================================================================
- * ERROR HELPERS
+ * ERROR MESSAGE HELPER
  * ========================================================================== */
 
 const extractErrorMessage = (err) => {
@@ -223,17 +307,20 @@ const extractErrorMessage = (err) => {
   const data = response?.data
 
   if (!data) {
-    return err?.message || 'Request failed.'
+    return (
+      err?.message ||
+      'Request failed.'
+    )
   }
 
   /*
-   * Laravel validation response:
+   * Laravel validation:
    *
    * {
    *   message: "...",
    *   errors: {
-   *     email: ["..."],
-   *     password: ["..."]
+   *     email: ["The email field is required."],
+   *     password: ["The password field is required."]
    *   }
    * }
    */
@@ -251,24 +338,36 @@ const extractErrorMessage = (err) => {
     }
   }
 
-  if (data.message) {
+  if (
+    typeof data.message === 'string' &&
+    data.message.trim() !== ''
+  ) {
     return data.message
   }
 
-  return err?.message || 'Request failed.'
+  if (
+    typeof data.error === 'string' &&
+    data.error.trim() !== ''
+  ) {
+    return data.error
+  }
+
+  if (
+    typeof data.errors === 'string'
+  ) {
+    return data.errors
+  }
+
+  return (
+    err?.message ||
+    'Request failed.'
+  )
 }
 
-/*
- * Convert an Axios error into a useful object while preserving
- * response/status/data.
- *
- * This is important because:
- *
- * error.response.status
- * error.response.data
- *
- * must remain available to the Vue component.
- */
+/* ==========================================================================
+ * CREATE API ERROR
+ * ========================================================================== */
+
 const createApiError = (err) => {
   const apiError = new Error(
     extractErrorMessage(err)
@@ -279,7 +378,8 @@ const createApiError = (err) => {
   apiError.status =
     err?.response?.status ?? null
 
-  apiError.response = err?.response ?? null
+  apiError.response =
+    err?.response ?? null
 
   apiError.data =
     err?.response?.data ?? null
@@ -290,7 +390,7 @@ const createApiError = (err) => {
 }
 
 /* ==========================================================================
- * GENERIC REQUEST HELPER
+ * GENERIC REQUEST
  * ========================================================================== */
 
 const request = async (
@@ -301,24 +401,29 @@ const request = async (
     let payload = options.body
 
     /*
-     * Support both:
+     * Support:
      *
-     * body: { email, password }
+     * body: {
+     *   email: 'test@gmail.com',
+     *   password: '123456'
+     * }
      *
-     * and:
+     * OR:
      *
-     * body: JSON.stringify(...)
+     * body: JSON.stringify({...})
      */
+
     if (typeof payload === 'string') {
       try {
         payload = JSON.parse(payload)
       } catch {
-        // Keep the original string.
+        // Keep string as-is
       }
     }
 
     const config = {
       url: path,
+
       method: (
         options.method || 'GET'
       ).toUpperCase(),
@@ -332,85 +437,31 @@ const request = async (
       },
     }
 
-    // Let Axios add the multipart boundary for file uploads.
-    if (typeof FormData !== 'undefined' && payload instanceof FormData) {
+    /*
+     * Do not manually set Content-Type for FormData.
+     * Axios/browser will add the multipart boundary.
+     */
+
+    if (
+      typeof FormData !== 'undefined' &&
+      payload instanceof FormData
+    ) {
       delete config.headers['Content-Type']
+      delete config.headers['content-type']
+      config.headers.Accept = 'application/json'
     }
 
-    const response = await api.request(config)
+    const response =
+      await api.request(config)
 
     return response.data
   } catch (err) {
-    const apiError = createApiError(err)
+    const apiError =
+      createApiError(err)
 
     error.value = apiError.message
 
-    /*
-     * IMPORTANT:
-     *
-     * Throw our enhanced error instead of:
-     *
-     * throw new Error(message)
-     *
-     * because we want to preserve status/data.
-     */
     throw apiError
-  }
-}
-
-/* ==========================================================================
- * PERSIST AUTH
- * ========================================================================== */
-
-const persistAuthData = (
-  authToken,
-  userData
-) => {
-  token.value = authToken || null
-  user.value = userData || null
-
-  try {
-    if (authToken) {
-      localStorage.setItem(
-        TOKEN_KEY,
-        authToken
-      )
-    } else {
-      localStorage.removeItem(TOKEN_KEY)
-    }
-
-    if (userData) {
-      localStorage.setItem(
-        USER_KEY,
-        JSON.stringify(userData)
-      )
-
-      const role = String(
-        userData.role || ''
-      ).toLowerCase()
-
-      if (
-        role === 'admin' ||
-        userData.is_admin
-      ) {
-        localStorage.setItem(
-          ADMIN_KEY,
-          JSON.stringify(userData)
-        )
-      } else {
-        localStorage.removeItem(
-          ADMIN_KEY
-        )
-      }
-    } else {
-      localStorage.removeItem(USER_KEY)
-      localStorage.removeItem(ADMIN_KEY)
-    }
-  } catch (storageError) {
-    console.warn(
-      'Unable to persist authentication data:',
-      storageError
-    )
   }
 }
 
@@ -426,14 +477,20 @@ const login = async ({
   error.value = ''
 
   /*
-   * Remove stale token before a new login.
+   * Remove old token before a new login.
    */
   clearAuthState()
 
   try {
     const cleanEmail = String(
       email || ''
-    ).trim().toLowerCase()
+    )
+      .trim()
+      .toLowerCase()
+
+    const cleanPassword = String(
+      password ?? ''
+    )
 
     const data = await request(
       '/auth/login',
@@ -442,21 +499,18 @@ const login = async ({
 
         body: {
           email: cleanEmail,
-          password: String(
-            password ?? ''
-          ),
+          password: cleanPassword,
         },
       }
     )
 
     /*
-     * Laravel should return:
+     * Expected backend response:
      *
      * {
-     *   message,
-     *   user,
-     *   token,
-     *   redirect_url
+     *   message: "Login successful.",
+     *   user: {...},
+     *   token: "xxxxx"
      * }
      */
 
@@ -465,7 +519,7 @@ const login = async ({
       !data?.user
     ) {
       throw new Error(
-        'Login succeeded but the server did not return valid authentication data.'
+        'Login succeeded, but the server did not return a token and user.'
       )
     }
 
@@ -476,10 +530,6 @@ const login = async ({
 
     return data
   } catch (err) {
-    /*
-     * request() already converted the error
-     * into ApiError.
-     */
     error.value =
       err?.message ||
       'Login failed.'
@@ -494,7 +544,9 @@ const login = async ({
  * REGISTER
  * ========================================================================== */
 
-const register = async (payload) => {
+const register = async (
+  payload
+) => {
   isLoading.value = true
   error.value = ''
 
@@ -508,9 +560,10 @@ const register = async (payload) => {
     )
 
     /*
-     * Only persist a token if the backend
-     * actually returned one.
+     * Some backends automatically log the user in
+     * after registration.
      */
+
     if (
       data?.token &&
       data?.user
@@ -522,6 +575,12 @@ const register = async (payload) => {
     }
 
     return data
+  } catch (err) {
+    error.value =
+      err?.message ||
+      'Registration failed.'
+
+    throw err
   } finally {
     isLoading.value = false
   }
@@ -539,22 +598,32 @@ const verifyOtp = async (
   error.value = ''
 
   try {
+    const cleanEmail = String(
+      email || ''
+    )
+      .trim()
+      .toLowerCase()
+
+    const cleanCode = String(
+      code || ''
+    ).trim()
+
     const data = await request(
       '/auth/verify-otp',
       {
         method: 'POST',
 
         body: {
-          email: String(
-            email || ''
-          ).trim().toLowerCase(),
-
-          code: String(
-            code || ''
-          ).trim(),
+          email: cleanEmail,
+          code: cleanCode,
         },
       }
     )
+
+    /*
+     * If OTP verification logs the user in,
+     * save the returned token.
+     */
 
     if (
       data?.token &&
@@ -567,6 +636,12 @@ const verifyOtp = async (
     }
 
     return data
+  } catch (err) {
+    error.value =
+      err?.message ||
+      'OTP verification failed.'
+
+    throw err
   } finally {
     isLoading.value = false
   }
@@ -589,20 +664,29 @@ const fetchCurrentUser = async () => {
     const data = await request('/user')
 
     /*
-     * Supports both:
+     * Support both:
      *
-     * { id, name, ... }
+     * {
+     *   id: 1,
+     *   name: "John"
+     * }
      *
      * and:
      *
-     * { data: { id, name, ... } }
+     * {
+     *   data: {
+     *      id: 1,
+     *      name: "John"
+     *   }
+     * }
      */
+
     const fetchedUser =
       data?.data ?? data
 
     if (!fetchedUser) {
       throw new Error(
-        'The server did not return a user.'
+        'The server did not return your user information.'
       )
     }
 
@@ -620,27 +704,21 @@ const fetchCurrentUser = async () => {
 
       if (
         role === 'admin' ||
-        fetchedUser.is_admin
+        fetchedUser.is_admin === true
       ) {
         localStorage.setItem(
           ADMIN_KEY,
           JSON.stringify(fetchedUser)
         )
       } else {
-        localStorage.removeItem(
-          ADMIN_KEY
-        )
+        localStorage.removeItem(ADMIN_KEY)
       }
     } catch {
-      // Ignore storage errors.
+      // Ignore localStorage errors
     }
 
     return fetchedUser
   } catch (err) {
-    /*
-     * If the session is invalid, the response interceptor
-     * has already cleared the authentication state.
-     */
     error.value =
       err?.message ||
       'Unable to retrieve your account.'
@@ -687,11 +765,11 @@ const loginWithToken = async (
   error.value = ''
 
   try {
-    token.value = newToken
+    token.value = String(newToken)
 
     localStorage.setItem(
       TOKEN_KEY,
-      newToken
+      String(newToken)
     )
 
     const fetchedUser =
@@ -699,7 +777,7 @@ const loginWithToken = async (
 
     if (!fetchedUser) {
       throw new Error(
-        'Failed to retrieve your account using the provided token.'
+        'Unable to retrieve the user associated with this token.'
       )
     }
 
@@ -731,10 +809,10 @@ const logout = async () => {
         }
       )
     }
-  } catch {
+  } catch (err) {
     /*
-     * Even if the server logout fails,
-     * remove the local session.
+     * Even when the server returns an error,
+     * remove the local authentication.
      */
   } finally {
     clearAuthState()
@@ -742,7 +820,7 @@ const logout = async () => {
 }
 
 /* ==========================================================================
- * PROFILE AVATAR
+ * PROFILE
  * ========================================================================== */
 
 const fetchProfileAvatar = async () => {
@@ -778,21 +856,14 @@ const setProfileAvatar = (
  * ========================================================================== */
 
 const loginWithGoogle = () => {
+  error.value = ''
+
   window.location.href =
     `${API_ORIGIN}/api/auth/google`
 }
 
 /* ==========================================================================
  * TELEGRAM LOGIN
- *
- * Flow:
- *   1. Open a blank popup synchronously (must happen inside the click
- *      handler or browsers block it).
- *   2. POST /auth/telegram/init to get a { token, url }.
- *   3. Navigate the popup to that deep link.
- *   4. Self-scheduling poll of /auth/telegram/status/{token} (NOT
- *      setInterval — see note below) until approved/declined/expired,
- *      or the popup is closed, or a 5 minute timeout elapses.
  * ========================================================================== */
 
 let telegramPollTimer = null
@@ -801,21 +872,13 @@ let telegramReject = null
 let telegramPopup = null
 
 const stopTelegramTimers = () => {
-  // telegramPollTimer is a setTimeout id (self-scheduling loop), not
-  // a setInterval id — see loginWithTelegram() below.
   if (telegramPollTimer) {
-    clearTimeout(
-      telegramPollTimer
-    )
-
+    clearTimeout(telegramPollTimer)
     telegramPollTimer = null
   }
 
   if (telegramTimeoutTimer) {
-    clearTimeout(
-      telegramTimeoutTimer
-    )
-
+    clearTimeout(telegramTimeoutTimer)
     telegramTimeoutTimer = null
   }
 }
@@ -829,14 +892,15 @@ const cancelTelegramLogin = () => {
     try {
       telegramPopup.close()
     } catch {
-      // Ignore popup errors.
+      // Ignore
     }
   }
 
   telegramPopup = null
 
   if (telegramReject) {
-    const reject = telegramReject
+    const reject =
+      telegramReject
 
     telegramReject = null
 
@@ -850,8 +914,7 @@ const loginWithTelegram = () => {
   error.value = ''
 
   /*
-   * Open popup synchronously from the click event, BEFORE any await,
-   * or browsers will treat it as an unsolicited popup and block it.
+   * Open popup synchronously from the click event.
    */
   const popup = window.open(
     '',
@@ -859,21 +922,27 @@ const loginWithTelegram = () => {
   )
 
   if (!popup) {
-    return Promise.reject(
+    const popupError =
       new Error(
         'Telegram could not open. Please allow pop-ups for this site and try again.'
       )
+
+    error.value =
+      popupError.message
+
+    return Promise.reject(
+      popupError
     )
   }
 
   try {
     popup.opener = null
   } catch {
-    // Ignore.
+    // Ignore
   }
 
-  isLoading.value = true
   telegramPopup = popup
+  isLoading.value = true
 
   return new Promise(
     (resolve, reject) => {
@@ -888,15 +957,17 @@ const loginWithTelegram = () => {
         isLoading.value = false
       }
 
-      const fail = (message) => {
+      const fail = (
+        message
+      ) => {
         cleanup()
 
         error.value = message
 
         try {
-          popup?.close()
+          popup.close()
         } catch {
-          // Ignore.
+          // Ignore
         }
 
         reject(
@@ -906,72 +977,92 @@ const loginWithTelegram = () => {
 
       let loginToken = null
 
-      /*
-       * Self-scheduling poll: each tick only starts once the previous
-       * request has finished, so slow/overlapping responses can never
-       * race each other into resolving/rejecting the same promise
-       * twice or leaving a stray "used" status unhandled.
-       */
       const scheduleNextPoll = () => {
-        telegramPollTimer = setTimeout(pollOnce, 2000)
+        telegramPollTimer =
+          setTimeout(
+            pollOnce,
+            2000
+          )
       }
 
       const pollOnce = async () => {
-        if (popup?.closed) {
-          fail('Telegram window was closed. Please try again.')
+        if (!loginToken) {
+          fail(
+            'Telegram login token is missing.'
+          )
+          return
+        }
+
+        if (popup.closed) {
+          fail(
+            'Telegram window was closed. Please try again.'
+          )
           return
         }
 
         try {
-          const statusData = await request(
-            `/auth/telegram/status/${encodeURIComponent(loginToken)}`
-          )
+          const statusData =
+            await request(
+              `/auth/telegram/status/${encodeURIComponent(loginToken)}`
+            )
 
-          switch (statusData?.status) {
-            case 'approved': {
-              cleanup()
+          const status =
+            statusData?.status
 
-              if (statusData.token && statusData.user) {
-                persistAuthData(
-                  statusData.token,
-                  statusData.user
-                )
-              }
+          if (
+            status === 'approved'
+          ) {
+            cleanup()
 
-              try {
-                popup.close()
-              } catch {
-                // Ignore.
-              }
-
-              resolve(statusData.user)
-              return
+            if (
+              statusData?.token &&
+              statusData?.user
+            ) {
+              persistAuthData(
+                statusData.token,
+                statusData.user
+              )
             }
 
-            case 'declined':
-              fail('Telegram login was declined.')
-              return
+            try {
+              popup.close()
+            } catch {
+              // Ignore
+            }
 
-            case 'expired':
-              fail('Telegram login link expired. Please try again.')
-              return
+            resolve(
+              statusData.user
+            )
 
-            case 'used':
-              // Another in-flight poll already resolved this token —
-              // nothing to do, just keep the loop alive in case this
-              // was actually a stale/duplicate response.
-              scheduleNextPoll()
-              return
-
-            default:
-              // 'pending' or anything unrecognized — keep polling.
-              scheduleNextPoll()
-              return
+            return
           }
+
+          if (
+            status === 'declined'
+          ) {
+            fail(
+              'Telegram login was declined.'
+            )
+            return
+          }
+
+          if (
+            status === 'expired'
+          ) {
+            fail(
+              'Telegram login link expired. Please try again.'
+            )
+            return
+          }
+
+          /*
+           * pending / used / unknown status
+           */
+          scheduleNextPoll()
         } catch (err) {
           fail(
             err?.message ||
-            'Telegram login failed.'
+              'Telegram login failed.'
           )
         }
       }
@@ -982,36 +1073,49 @@ const loginWithTelegram = () => {
           method: 'POST',
         }
       )
-        .then((data) => {
-          loginToken = data?.token
-          const url = data?.url
+        .then(
+          (data) => {
+            loginToken =
+              data?.token
 
-          if (!loginToken || !url) {
-            fail(
-              'The server did not return a valid Telegram login link.'
-            )
-            return
-          }
+            const url =
+              data?.url
 
-          popup.location.href = url
-
-          scheduleNextPoll()
-
-          telegramTimeoutTimer = setTimeout(
-            () => {
+            if (
+              !loginToken ||
+              !url
+            ) {
               fail(
-                'Telegram login timed out. Please try again.'
+                'The server did not return a valid Telegram login link.'
               )
-            },
-            5 * 60 * 1000
-          )
-        })
-        .catch((err) => {
-          fail(
-            err?.message ||
-            'Failed to start Telegram login.'
-          )
-        })
+
+              return
+            }
+
+            popup.location.href =
+              url
+
+            scheduleNextPoll()
+
+            telegramTimeoutTimer =
+              setTimeout(
+                () => {
+                  fail(
+                    'Telegram login timed out. Please try again.'
+                  )
+                },
+                5 * 60 * 1000
+              )
+          }
+        )
+        .catch(
+          (err) => {
+            fail(
+              err?.message ||
+                'Failed to start Telegram login.'
+            )
+          }
+        )
     }
   )
 }
@@ -1027,18 +1131,27 @@ const forgotPassword = async (
   error.value = ''
 
   try {
+    const cleanEmail =
+      String(email || '')
+        .trim()
+        .toLowerCase()
+
     return await request(
       '/auth/forgot-password',
       {
         method: 'POST',
 
         body: {
-          email: String(
-            email || ''
-          ).trim().toLowerCase(),
+          email: cleanEmail,
         },
       }
     )
+  } catch (err) {
+    error.value =
+      err?.message ||
+      'Unable to send password reset request.'
+
+    throw err
   } finally {
     isLoading.value = false
   }
@@ -1058,19 +1171,23 @@ const resetPassword = async ({
   error.value = ''
 
   try {
+    const cleanEmail =
+      String(email || '')
+        .trim()
+        .toLowerCase()
+
+    const cleanCode =
+      String(code || '').trim()
+
     return await request(
       '/auth/reset-password',
       {
         method: 'POST',
 
         body: {
-          email: String(
-            email || ''
-          ).trim().toLowerCase(),
+          email: cleanEmail,
 
-          code: String(
-            code || ''
-          ).trim(),
+          code: cleanCode,
 
           password,
 
@@ -1080,6 +1197,12 @@ const resetPassword = async ({
         },
       }
     )
+  } catch (err) {
+    error.value =
+      err?.message ||
+      'Unable to reset password.'
+
+    throw err
   } finally {
     isLoading.value = false
   }
@@ -1090,20 +1213,19 @@ const resetPassword = async ({
  * ========================================================================== */
 
 const handleOAuthCallback = () => {
-  const urlParams =
+  const params =
     new URLSearchParams(
       window.location.search
     )
 
   const callbackToken =
-    urlParams.get('token')
+    params.get('token')
 
   const callbackError =
-    urlParams.get('oauth_error')
+    params.get('oauth_error')
 
   if (callbackError) {
-    error.value =
-      callbackError
+    error.value = callbackError
 
     window.history.replaceState(
       {},
@@ -1116,8 +1238,7 @@ const handleOAuthCallback = () => {
 
   if (callbackToken) {
     /*
-     * Remove token from browser URL after
-     * reading it.
+     * Remove token from address bar.
      */
     window.history.replaceState(
       {},
@@ -1139,46 +1260,47 @@ const handleOAuthCallback = () => {
 
 export function useAuth() {
   return {
+    // API
     API_URL,
     API_ORIGIN,
+    api,
+    request,
 
+    // Auth state
     token,
     user,
     profileAvatar,
-
     isAuthenticated,
     isLoading,
     error,
 
-    api,
-
-    request,
-
+    // Session
     fetchCurrentUser,
     initSession,
     loginWithToken,
 
-    fetchProfileAvatar,
-    setProfileAvatar,
-
+    // Authentication
     login,
     register,
     verifyOtp,
+    logout,
 
+    // Password
     forgotPassword,
     resetPassword,
 
+    // OAuth
     loginWithGoogle,
-
     loginWithTelegram,
     cancelTelegramLogin,
-
-    logout,
-
     handleOAuthCallback,
 
-    clearAuthState,
+    // Profile
+    fetchProfileAvatar,
+    setProfileAvatar,
 
+    // Helpers
+    clearAuthState,
     dashboardPathFor,
   }
 }

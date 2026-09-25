@@ -18,18 +18,23 @@ class AuthController extends Controller
 {
     public function __construct(
         protected AuthService $authService
-    ) {}
+    ) {
+    
+    }
 
     /**
      * Register a new user.
      */
-    public function register(RegisterRequest $request): JsonResponse
-    {
+    public function register(
+        RegisterRequest $request
+    ): JsonResponse {
         $user = $this->authService->register(
             $request->validated()
         );
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user
+            ->createToken('auth_token')
+            ->plainTextToken;
 
         return response()->json([
             'message' => 'Registration successful.',
@@ -42,8 +47,9 @@ class AuthController extends Controller
     /**
      * Verify email OTP.
      */
-    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
-    {
+    public function verifyOtp(
+        VerifyOtpRequest $request
+    ): JsonResponse {
         $data = $request->validated();
 
         $user = $this->authService->verifyOtp(
@@ -51,24 +57,29 @@ class AuthController extends Controller
             $data['code']
         );
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user
+            ->createToken('auth_token')
+            ->plainTextToken;
 
         return response()->json([
             'message' => 'Email verified successfully.',
             'user' => $user,
             'token' => $token,
             'redirect_url' => $this->getRoleRedirectUrl($user),
-        ]);
+        ], 200);
     }
 
     /**
      * Resend email verification OTP.
      */
-    public function resendOtp(ResendOtpRequest $request): JsonResponse
-    {
+    public function resendOtp(
+        ResendOtpRequest $request
+    ): JsonResponse {
         $email = $request->validated()['email'];
 
-        $user = $this->authService->findUserOrFail($email);
+        $user = $this->authService->findUserOrFail(
+            $email
+        );
 
         if ($user->email_verified_at) {
             return response()->json([
@@ -83,14 +94,15 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'A new verification code has been sent.',
-        ]);
+        ], 200);
     }
 
     /**
      * Login.
      */
-    public function login(LoginRequest $request): JsonResponse
-    {
+    public function login(
+        LoginRequest $request
+    ): JsonResponse {
         $data = $request->validated();
 
         $result = $this->authService->login(
@@ -105,14 +117,15 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $result['token'],
             'redirect_url' => $this->getRoleRedirectUrl($user),
-        ]);
+        ], 200);
     }
 
     /**
      * Logout.
      */
-    public function logout(Request $request): JsonResponse
-    {
+    public function logout(
+        Request $request
+    ): JsonResponse {
         $user = $request->user();
 
         if ($user) {
@@ -125,7 +138,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logged out successfully.',
-        ]);
+        ], 200);
     }
 
     /**
@@ -136,7 +149,9 @@ class AuthController extends Controller
     ): JsonResponse {
         $email = $request->validated()['email'];
 
-        $user = $this->authService->findUserOrFail($email);
+        $user = $this->authService->findUserOrFail(
+            $email
+        );
 
         $this->authService->generateAndSendOtp(
             $user,
@@ -145,7 +160,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'A password reset code has been sent.',
-        ]);
+        ], 200);
     }
 
     /**
@@ -164,28 +179,25 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Password has been reset successfully. You can now log in.',
-        ]);
+        ], 200);
     }
 
     /**
      * Determine frontend destination based on user role.
-     *
-     * Must match the routes used by the Vue frontend.
      */
-    protected function getRoleRedirectUrl(User $user): string
-    {
-        $role = strtolower(trim((string) $user->role));
+    protected function getRoleRedirectUrl(
+        User $user
+    ): string {
+        $role = strtolower(
+            trim((string) $user->role)
+        );
 
         return match ($role) {
-            'admin' => '/admin/dashboard',
-
+            'admin',
             'hr',
-            'company' => '/company/dashboard',
+            'company' => '/dashboard',
 
-            'user',
-            'job_seeker' => '/user/dashboard',
-
-            default => '/user/dashboard',
+            default => '/profile',
         };
     }
 }

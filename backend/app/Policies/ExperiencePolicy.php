@@ -21,7 +21,7 @@ class ExperiencePolicy
      */
     public function view(User $user, Experience $experience): bool
     {
-        return $user->isAdmin()
+        return $user->isAdmin() || $user->isHr()
             || $user->id === $experience->user_id
             || ($experience->user?->profile?->is_profile_visible ?? false);
     }
@@ -39,7 +39,7 @@ class ExperiencePolicy
      */
     public function update(User $user, Experience $experience): bool
     {
-        return $user->isAdmin() || $user->id === $experience->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $experience->user_id;
     }
 
     /**
@@ -47,7 +47,7 @@ class ExperiencePolicy
      */
     public function delete(User $user, Experience $experience): bool
     {
-        return $user->isAdmin() || $user->id === $experience->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $experience->user_id;
     }
 
     /**
@@ -55,7 +55,7 @@ class ExperiencePolicy
      */
     public function restore(User $user, Experience $experience): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isHr();
     }
 
     /**

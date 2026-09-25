@@ -30,11 +30,11 @@ return [
     ],
     
     'telegram' => [
-        'bot_token'      => env('TELEGRAM_BOT_TOKEN'),
-        'username'       => env('TELEGRAM_BOT_USERNAME'),
-        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
-        'ca_bundle'      => env('TELEGRAM_CA_BUNDLE'),
-    ],
+    'token'          => env('TELEGRAM_BOT_TOKEN'),
+    'username'       => env('TELEGRAM_BOT_USERNAME'),
+    'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
+    'ca_bundle'      => env('TELEGRAM_CA_BUNDLE'),
+],
 
 
     'cloudinary' => [

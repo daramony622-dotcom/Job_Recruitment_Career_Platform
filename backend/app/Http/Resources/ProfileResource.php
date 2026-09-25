@@ -15,12 +15,17 @@ class ProfileResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $avatar = $this->avatar;
+        if ($avatar && !filter_var($avatar, FILTER_VALIDATE_URL) && !Storage::disk('public')->exists($avatar)) {
+            $avatar = null;
+        }
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'avatar' => $this->avatar && !filter_var($this->avatar, FILTER_VALIDATE_URL)
-                ? Storage::disk('public')->url($this->avatar)
-                : $this->avatar,
+            'avatar' => $avatar && !filter_var($avatar, FILTER_VALIDATE_URL)
+                ? asset('storage/' . ltrim($avatar, '/'))
+                : $avatar,
             'headline' => $this->headline,
             'bio' => $this->bio,
             'custom_skills' => $this->custom_skills ?? [],
@@ -47,6 +52,7 @@ class ProfileResource extends JsonResource
             'user' => $this->whenLoaded('user'),
             'educations' => $this->whenLoaded('educations'),
             'experiences' => $this->whenLoaded('experiences'),
+            'cvs' => CVResource::collection($this->whenLoaded('cvs')),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

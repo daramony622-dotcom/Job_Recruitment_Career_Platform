@@ -84,7 +84,7 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
-        if ($request->user()?->role !== 'admin') {
+        if ($request->user()?->role !== 'admin' && $request->user()?->role !== 'hr') {
             abort(403, 'Only administrators can change user roles.');
         }
 

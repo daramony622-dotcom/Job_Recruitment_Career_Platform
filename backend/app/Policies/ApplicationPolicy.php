@@ -14,13 +14,8 @@ class ApplicationPolicy
 
     public function view(User $user, Application $application): bool
     {
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isHr()) {
             return true;
-        }
-
-        if ($user->isHr()) {
-            $companyId = $user->company?->id;
-            return !$companyId || $application->jobPost->company_id === $companyId;
         }
 
         return $application->user_id === $user->id;
@@ -28,18 +23,13 @@ class ApplicationPolicy
 
     public function create(User $user): bool
     {
-        return $user->isUser() || $user->role === 'user';
+        return true;
     }
 
     public function updateStatus(User $user, Application $application): bool
     {
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isHr()) {
             return true;
-        }
-
-        if ($user->isHr()) {
-            $companyId = $user->company?->id;
-            return $companyId && $application->jobPost->company_id === $companyId;
         }
 
         return false;

@@ -3,13 +3,15 @@
 use App\Http\Controllers\Api\Admin\JobCategoryController as AdminJobCategoryController;
 use App\Http\Controllers\Api\Admin\SkillCategoryController as AdminSkillCategoryController;
 use App\Http\Controllers\Api\Admin\SkillController as AdminSkillController;
+use App\Http\Controllers\Api\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Api\Company\ApplicantController;
 use App\Http\Controllers\Api\Company\CompanyProfileController;
 use App\Http\Controllers\Api\Company\InterviewController;
 use App\Http\Controllers\Api\Company\JobPostController;
 use App\Http\Controllers\Api\Company\ReportController;
-use App\Http\Controllers\Api\JobSeeker\NotificationController as UserNotificationController;
+use App\Http\Controllers\Api\Company\EmployeeController;
 use Illuminate\Support\Facades\Route;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -22,15 +24,21 @@ use Illuminate\Support\Facades\Route;
 
 // Company Profile
 Route::get('profile', [CompanyProfileController::class, 'show']);
+Route::get('available', [CompanyProfileController::class, 'available']);
+Route::post('switch', [CompanyProfileController::class, 'switch']);
 Route::post('profile', [CompanyProfileController::class, 'store']);
 Route::put('profile', [CompanyProfileController::class, 'update']);
 Route::delete('profile', [CompanyProfileController::class, 'destroy']);
 
 // Shared workspace resources do not require a company profile.
-Route::get('notifications', [UserNotificationController::class, 'index']);
-Route::post('notifications/read-all', [UserNotificationController::class, 'markAllAsRead']);
-Route::match(['post', 'patch'], 'notifications/{notification}/read', [UserNotificationController::class, 'markAsRead']);
-Route::delete('notifications/{notification}', [UserNotificationController::class, 'destroy']);
+Route::get('notifications', [AdminNotificationController::class, 'index']);
+Route::post('notifications/read-all', [AdminNotificationController::class, 'markAllAsRead']);
+Route::match(['post', 'patch'], 'notifications/{notification}/read', [AdminNotificationController::class, 'markAsRead']);
+Route::delete('notifications/{notification}', [AdminNotificationController::class, 'destroy']);
+
+Route::get('employees', [EmployeeController::class, 'index']);
+Route::get('employees/{user}', [EmployeeController::class, 'show']);
+Route::put('employees/{user}', [EmployeeController::class, 'update']);
 
 Route::patch('job-categories/{jobCategory}/toggle-active', [AdminJobCategoryController::class, 'toggleActive'])
     ->name('company.job-categories.toggle-active');

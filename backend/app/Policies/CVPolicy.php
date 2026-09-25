@@ -21,7 +21,7 @@ class CVPolicy
      */
     public function view(User $user, CV $cv): bool
     {
-        return $user->hasRole('admin') || $user->id === $cv->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $cv->user_id;
     }
 
     /**
@@ -29,7 +29,7 @@ class CVPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('job_seeker') || $user->hasRole('admin');
+        return true;
     }
 
     /**
@@ -37,7 +37,7 @@ class CVPolicy
      */
     public function update(User $user, CV $cv): bool
     {
-        return $user->hasRole('admin') || $user->id === $cv->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $cv->user_id;
     }
 
     /**
@@ -45,7 +45,7 @@ class CVPolicy
      */
     public function delete(User $user, CV $cv): bool
     {
-        return $user->hasRole('admin') || $user->id === $cv->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $cv->user_id;
     }
 
     /**
@@ -53,7 +53,7 @@ class CVPolicy
      */
     public function restore(User $user, CV $cv): bool
     {
-        return $user->hasRole('admin');
+        return $user->isAdmin() || $user->isHr();
     }
 
     /**

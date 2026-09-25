@@ -20,7 +20,7 @@ class InterviewPolicy
      */
     public function view(User $user, Interview $interview): bool
     {
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isHr()) {
             return true;
         }
 
@@ -40,7 +40,7 @@ class InterviewPolicy
      */
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->hasRole('hr') || $user->hasRole('company');
+        return $user->isAdmin() || $user->isHr() || $user->hasRole('hr') || $user->hasRole('company');
     }
 
     /**
@@ -48,7 +48,7 @@ class InterviewPolicy
      */
     public function update(User $user, Interview $interview): bool
     {
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isHr()) {
             return true;
         }
 
@@ -68,7 +68,7 @@ class InterviewPolicy
      */
     public function delete(User $user, Interview $interview): bool
     {
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isHr()) {
             return true;
         }
 

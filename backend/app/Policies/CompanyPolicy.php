@@ -15,7 +15,7 @@ class CompanyPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isHr();
     }
 
     /**
@@ -23,7 +23,7 @@ class CompanyPolicy
      */
     public function view(User $user, Company $company): bool
     {
-        return $user->isAdmin() || $user->id === $company->user_id;
+        return $user->isAdmin() || $user->isHr() || $user->id === $company->user_id;
     }
 
     /**
@@ -39,7 +39,7 @@ class CompanyPolicy
      */
     public function update(User $user, Company $company): bool
     {
-        return $user->isAdmin() || $user->id === $company->user_id;
+        return $user->isAdmin() || $user->id === $company->user_id || $user->isHr();
     }
 
     /**
@@ -47,7 +47,7 @@ class CompanyPolicy
      */
     public function delete(User $user, Company $company): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isHr();
     }
 
     /**
@@ -55,7 +55,7 @@ class CompanyPolicy
      */
     public function restore(User $user, Company $company): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isHr();
     }
 
     /**
@@ -63,7 +63,6 @@ class CompanyPolicy
      */
     public function forceDelete(User $user, Company $company): bool
     {
-        return $user->isAdmin();
+        return $user->isAdmin() || $user->isHr();
     }
 }
-

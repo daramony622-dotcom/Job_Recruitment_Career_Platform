@@ -14,7 +14,7 @@ class Telegram
 
     public function __construct()
     {
-        $token = (string) config('services.telegram.bot_token');
+        $token = (string) config('services.telegram.token');
 
         $this->base     = "https://api.telegram.org/bot{$token}/";
         $this->fileBase = "https://api.telegram.org/file/bot{$token}/";

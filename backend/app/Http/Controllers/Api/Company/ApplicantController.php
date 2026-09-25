@@ -19,25 +19,19 @@ class ApplicantController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $company = $request->user()->company;
+        $user = $request->user();
+        $companyId = $request->query('company_id');
+        $status = $request->query('status');
 
-        if (!$company) {
-            if ($request->user()->isAdmin() || $request->user()->isHr()) {
-                $applications = $this->applicationService->listAll($request->query('status'));
-
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $applications,
-                ]);
-            }
-
-            return response()->json(['status' => 'error', 'message' => 'User is not associated with any company.'], 403);
+        if ($companyId) {
+            $applications = $this->applicationService->listForCompany((int) $companyId, $status);
+        } elseif ($user->isAdmin() || $user->isHr()) {
+            $applications = $this->applicationService->listAll($status);
+        } elseif ($user->company) {
+            $applications = $this->applicationService->listForCompany($user->company->id, $status);
+        } else {
+            $applications = $this->applicationService->listAll($status);
         }
-
-        $applications = $this->applicationService->listForCompany(
-            $company->id,
-            $request->query('status')
-        );
 
         return response()->json([
             'status' => 'success',
@@ -55,7 +49,7 @@ class ApplicantController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data'   => $application->load(['jobPost', 'jobSeeker.profile', 'interviews'])
+            'data'   => $application->load(['jobPost.company', 'jobSeeker.profile', 'jobSeeker.cvs', 'jobSeeker.educations', 'jobSeeker.experiences', 'jobSeeker.skills', 'interviews'])
         ]);
     }
 

@@ -843,8 +843,14 @@ async function saveResource() {
               <p v-if="detail.hired_at">Hired: {{ formatDate(detail.hired_at) }}</p>
               <p v-if="detail.rejection_reason">Reason: {{ detail.rejection_reason }}</p>
             </div>
-            <a v-if="detail.cv_path || detail.cv_original_name" :href="detail.cv_path" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
-              <Download class="w-4 h-4" /> {{ detail.cv_original_name || 'View CV' }}
+            <a
+              v-if="detail.cv_path || (detail.jobSeeker?.cvs && detail.jobSeeker.cvs.length > 0)"
+              :href="resolveMediaUrl(detail.cv_path || detail.jobSeeker?.cvs?.[0]?.file_path)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shadow-md shadow-blue-600/20 transition-all"
+            >
+              <Download class="w-4 h-4" /> {{ detail.cv_original_name || detail.jobSeeker?.cvs?.[0]?.title || 'View Candidate CV' }}
             </a>
           </div>
         </div>

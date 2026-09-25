@@ -9,6 +9,10 @@ const isCompanyScopedUser = (user) => Boolean(user && ['hr', 'company'].includes
 const isAllowedAdminRoute = (user, path) => {
   if (!isCompanyScopedUser(user)) return true
 
+  if (String(user.role || '').toLowerCase() === 'hr' && path.startsWith('/admin-companies')) {
+    return false
+  }
+
   const allowedPrefixes = [
     '/dashboard',
     '/admin/dashboard',
@@ -22,6 +26,10 @@ const isAllowedAdminRoute = (user, path) => {
     '/reports',
     '/settings',
   ]
+
+  if (String(user.role || '').toLowerCase() === 'hr') {
+    allowedPrefixes.push('/candidates')
+  }
 
   return allowedPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
 }
@@ -76,7 +84,7 @@ const routes = [
   },
   {
     path: '/admin/dashboard',
-    alias: ['/dashboard', '/admin'],
+    alias: ['/dashboard', '/admin', '/company/dashboard', '/user/dashboard'],
     name: 'Dashboard',
     component: () => import('../admin/DashboardView.vue'),
     meta: { admin: true },

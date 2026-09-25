@@ -55,7 +55,7 @@ class ApplicationService
 
     public function listForCompany(int $companyId, ?string $status = null)
     {
-        return Application::with(['jobPost', 'jobSeeker.profile'])
+        return Application::with(['jobPost.company', 'jobSeeker.profile', 'jobSeeker.cvs', 'jobSeeker.educations', 'jobSeeker.experiences', 'jobSeeker.skills'])
             ->forCompany($companyId)
             ->when($status, fn ($q) => $q->status($status))
             ->latest()
@@ -64,7 +64,7 @@ class ApplicationService
 
     public function listAll(?string $status = null)
     {
-        return Application::with(['jobPost.company', 'jobSeeker.profile'])
+        return Application::with(['jobPost.company', 'jobSeeker.profile', 'jobSeeker.cvs', 'jobSeeker.educations', 'jobSeeker.experiences', 'jobSeeker.skills'])
             ->when($status, fn ($q) => $q->status($status))
             ->latest()
             ->paginate(15);
