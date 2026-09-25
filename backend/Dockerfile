@@ -1,35 +1,33 @@
-FROM richarvey/nginx-php-fpm:3.1.6
+FROM php:8.2-apache
 
-# Install system dependencies using apk (Alpine Linux package manager)
-RUN apk add --no-cache postgresql-dev libzip-dev zip unzip git
+# Install system dependencies and PHP extensions for PostgreSQL
+RUN apt-get update && apt-get install -y \
+     libpq-dev \
+     zip \
+     unzip \
+     git \
+     && docker-php-ext-install pdo pdo_pgsql zip
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_pgsql pgsql zip
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
-# Set the working directory
+# Set working directory
 WORKDIR /var/www/html
 
-# Copy the application code
+# Copy project files
 COPY . .
 
-# Install Composer dependencies
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Install Laravel dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Make the deploy script executable
-RUN chmod +x /var/www/html/scripts/00-laravel-deploy.sh
+# Set permissions for Laravel
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Image config
-ENV WEBROOT /var/www/html/public
-ENV PHP_ERRORS_STDERR 1
-ENV RUN_SCRIPTS 1
-ENV REAL_IP_HEADER 1
+# Expose port 80
+EXPOSE 80
 
-# Laravel config
-ENV APP_ENV production
-ENV APP_DEBUG false
-ENV LOG_CHANNEL stderr
-
-# Allow composer to run as root
-ENV COMPOSER_ALLOW_SUPERUSER 1
-
-CMD ["/start.sh"]
+# Run migrations and start Apache
+CMD php artisan migrate --force && php artisan config:cache && php artisan route:cache && apache2-foreground
